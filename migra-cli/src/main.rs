@@ -1,12 +1,8 @@
 #![deny(clippy::all)]
 
-use structopt::StructOpt;
+mod opts;
 
-#[derive(Debug, StructOpt)]
-enum AppOpt {
-    Init,
-}
-
+use opts::{AppOpt, StructOpt};
 
 fn main() {
     let opt = AppOpt::from_args();
