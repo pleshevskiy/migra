@@ -6,16 +6,26 @@ const MIGRA_TOML_FILENAME: &str = "Migra.toml";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Config {
-    directory: String,
+    pub directory: String,
+    pub database: DatabaseConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct DatabaseConfig {
+    pub connection: String
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
             directory: String::from("database"),
+            database: DatabaseConfig {
+                connection: String::new(),
+            }
         }
     }
 }
+
 
 impl Config {
     pub fn read() -> Config {
