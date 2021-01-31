@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 migra-core = { path = '../migra-core' }
 structopt = "0.3.21"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.5.8"
