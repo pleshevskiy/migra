@@ -1,4 +1,4 @@
-use postgres::{Client, NoTls, Error};
+use postgres::{Client, Error, NoTls};
 
 pub fn connect(connection_string: &str) -> Result<Client, Error> {
     Client::connect(connection_string, NoTls)
