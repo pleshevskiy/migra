@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
-const MIGRA_TOML_FILENAME: &str = "migra.toml";
+const MIGRA_TOML_FILENAME: &str = "Migra.toml";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Config {
@@ -27,12 +27,15 @@ impl Config {
 
     pub fn initialize() -> Result<(), Box<dyn std::error::Error>> {
         if Path::new(MIGRA_TOML_FILENAME).exists() {
+            println!("{} already exists", MIGRA_TOML_FILENAME);
             return Ok(());
         }
 
         let config = Config::default();
         let content = toml::to_string(&config)?;
         fs::write(MIGRA_TOML_FILENAME, content)?;
+
+        println!("Created {}", MIGRA_TOML_FILENAME);
 
         Ok(())
     }
