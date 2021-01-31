@@ -5,7 +5,7 @@ mod opts;
 
 use config::Config;
 use opts::{StructOpt, AppOpt, ApplyOpt};
-use std::path::{Path, PathBuf};
+use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = AppOpt::from_args();
@@ -19,14 +19,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut client = migra_core::database::connect(&config.database.connection)?;
 
-            let file_name = Path::new(&file_name);
-            let mut filepath = PathBuf::from(&config.directory);
-            filepath.push(file_name);
-            if file_name.extension().is_none() {
-                filepath.set_extension("sql");
-            }
+            let file_path = migra_core::path::PathBuilder::new(config.directory)
+                .append(file_name)
+                .default_extension("sql")
+                .build();
 
-            let content = std::fs::read_to_string(filepath)?;
+            let content = fs::read_to_string(file_path)?;
 
             match migra_core::database::apply_sql(&mut client, &content) {
                 Ok(_) => {
