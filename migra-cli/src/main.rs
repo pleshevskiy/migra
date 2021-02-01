@@ -4,7 +4,7 @@ mod config;
 mod opts;
 
 use config::Config;
-use opts::{StructOpt, AppOpt, ApplyOpt};
+use opts::{AppOpt, ApplyOpt, StructOpt};
 use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -13,13 +13,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match opt {
         AppOpt::Init => {
             Config::initialize()?;
-        },
+        }
         AppOpt::Apply(ApplyOpt { file_name }) => {
-            let config = Config::read();
+            let config = Config::read()?;
 
             let mut client = migra_core::database::connect(&config.database.connection)?;
 
-            let file_path = migra_core::path::PathBuilder::new(config.directory)
+            let file_path = migra_core::path::PathBuilder::from(config.root)
+                .append(config.directory)
                 .append(file_name)
                 .default_extension("sql")
                 .build();

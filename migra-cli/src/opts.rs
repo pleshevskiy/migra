@@ -6,9 +6,8 @@ pub(crate) enum AppOpt {
     Apply(ApplyOpt),
 }
 
-
 #[derive(Debug, StructOpt)]
 pub(crate) struct ApplyOpt {
     #[structopt(parse(from_str))]
-    pub file_name: String
+    pub file_name: String,
 }
