@@ -6,10 +6,18 @@ pub struct PathBuilder {
     buf: PathBuf,
 }
 
-impl PathBuilder {
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
+impl<P: AsRef<Path>> From<P> for PathBuilder {
+    fn from(path: P) -> Self {
         PathBuilder {
             buf: path.as_ref().to_path_buf(),
+        }
+    }
+}
+
+impl PathBuilder {
+    pub fn new<P: AsRef<Path>>() -> Self {
+        PathBuilder {
+            buf: PathBuf::new(),
         }
     }
 
@@ -37,21 +45,21 @@ mod tests {
 
     #[test]
     fn create_path_builder() {
-        let path = PathBuilder::new("test").build();
+        let path = PathBuilder::from("test").build();
 
         assert_eq!(path, Path::new("test"))
     }
 
     #[test]
     fn append_path_to_builder() {
-        let path = PathBuilder::new("directory").append("schema.sql").build();
+        let path = PathBuilder::from("directory").append("schema.sql").build();
 
         assert_eq!(path, Path::new("directory/schema.sql"))
     }
 
     #[test]
     fn add_default_extension_for_path() {
-        let path = PathBuilder::new("directory")
+        let path = PathBuilder::from("directory")
             .append("schema")
             .default_extension("sql")
             .build();
