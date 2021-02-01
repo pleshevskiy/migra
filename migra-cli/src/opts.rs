@@ -19,6 +19,12 @@ pub(crate) enum Command {
 
     #[structopt(name = "list", visible_alias = "ls")]
     List,
+
+    #[structopt(name = "upgrade", visible_alias = "up")]
+    Upgrade,
+
+    #[structopt(name = "downgrade", visible_alias = "down")]
+    Downgrade,
 }
 
 #[derive(Debug, StructOpt)]

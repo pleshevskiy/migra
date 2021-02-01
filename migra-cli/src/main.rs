@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        Command::List => {
+        Command::List | Command::Upgrade | Command::Downgrade => {
             unimplemented!();
         }
     }
