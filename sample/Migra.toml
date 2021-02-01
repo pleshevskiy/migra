@@ -1,0 +1,4 @@
+directory = "database"
+
+[database]
+connection = "postgres://postgres:123456@localhost:5434/migra"
