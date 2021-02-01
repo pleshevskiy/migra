@@ -31,30 +31,46 @@ impl Default for Config {
     }
 }
 
-impl Config {
-    pub fn read() -> io::Result<Config> {
-        let current_dir = std::env::current_dir()?;
+fn recursive_find_config_file() -> io::Result<PathBuf> {
+    let current_dir = std::env::current_dir()?;
 
-        let mut read_dir = Some(current_dir.as_path());
+    let mut read_dir = Some(current_dir.as_path());
 
-        loop {
-            if let Some(dir) = read_dir {
-                let migra_file_path = PathBuilder::from(dir).append(MIGRA_TOML_FILENAME).build();
-                if !migra_file_path.exists() {
-                    read_dir = dir.parent();
-                    continue;
-                }
-
-                let content = fs::read_to_string(migra_file_path)?;
-                let mut config: Config = toml::from_str(&content).expect("Cannot parse Migra.toml");
-
-                config.root = PathBuf::from(dir);
-
-                return Ok(config);
-            } else {
-                return Err(io::Error::from(io::ErrorKind::NotFound));
+    loop {
+        if let Some(dir) = read_dir {
+            let migra_file_path = PathBuilder::from(dir).append(MIGRA_TOML_FILENAME).build();
+            if !migra_file_path.exists() {
+                read_dir = dir.parent();
+                continue;
             }
+
+            return Ok(migra_file_path);
+        } else {
+            return Err(io::Error::from(io::ErrorKind::NotFound));
         }
+    }
+}
+
+impl Config {
+    pub fn read(config_path: Option<PathBuf>) -> io::Result<Config> {
+        let config_path = match config_path {
+            Some(mut config_path) if config_path.is_dir() => {
+                config_path.push(MIGRA_TOML_FILENAME);
+                config_path
+            },
+            Some(config_path) => config_path,
+            None => recursive_find_config_file()?,
+        };
+
+        let content = fs::read_to_string(&config_path)?;
+
+        let mut config: Config = toml::from_str(&content).expect("Cannot parse Migra.toml");
+        config.root = config_path
+            .parent()
+            .unwrap_or_else(|| Path::new(""))
+            .to_path_buf();
+
+        Ok(config)
     }
 
     pub fn initialize() -> Result<(), Box<dyn std::error::Error>> {

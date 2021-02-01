@@ -4,18 +4,18 @@ mod config;
 mod opts;
 
 use config::Config;
-use opts::{AppOpt, ApplyOpt, StructOpt};
+use opts::{AppOpt, ApplyCommandOpt, Command, StructOpt};
 use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = AppOpt::from_args();
 
-    match opt {
-        AppOpt::Init => {
+    match opt.command {
+        Command::Init => {
             Config::initialize()?;
         }
-        AppOpt::Apply(ApplyOpt { file_name }) => {
-            let config = Config::read()?;
+        Command::Apply(ApplyCommandOpt { file_name }) => {
+            let config = Config::read(opt.config)?;
 
             let mut client = migra_core::database::connect(&config.database.connection)?;
 
@@ -35,6 +35,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("{}", err)
                 }
             }
+        }
+        Command::List => {
+            unimplemented!();
         }
     }
 
