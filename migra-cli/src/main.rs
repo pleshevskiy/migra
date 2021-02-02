@@ -4,6 +4,7 @@ mod config;
 mod opts;
 
 use config::Config;
+use migra_core::path::PathBuilder;
 use opts::{AppOpt, ApplyCommandOpt, Command, StructOpt};
 use std::fs;
 
@@ -19,8 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut client = migra_core::database::connect(&config.database.connection)?;
 
-            let file_path = migra_core::path::PathBuilder::from(config.root)
-                .append(config.directory)
+            let file_path = PathBuilder::from(config.directory_path())
                 .append(file_name)
                 .default_extension("sql")
                 .build();
@@ -36,7 +36,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        Command::List | Command::Upgrade | Command::Downgrade => {
+        Command::List => {
+            let config = Config::read(opt.config)?;
+
+            let migration_dirs = config.migration_dirs()?;
+            if migration_dirs.is_empty() {
+                println!(
+                    "You haven't migrations in {}",
+                    config.directory_path().to_str().unwrap()
+                );
+            } else {
+                migration_dirs.iter().for_each(|dir| {
+                    let file_name = dir.file_name().and_then(|name| name.to_str()).unwrap();
+                    println!("{}", file_name);
+                });
+            }
+        }
+        Command::Upgrade | Command::Downgrade => {
             unimplemented!();
         }
     }

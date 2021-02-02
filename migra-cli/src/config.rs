@@ -1,8 +1,7 @@
 use migra_core::path::PathBuilder;
 use serde::{Deserialize, Serialize};
-use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
+use std::{fs, io};
 
 const MIGRA_TOML_FILENAME: &str = "Migra.toml";
 
@@ -57,7 +56,7 @@ impl Config {
             Some(mut config_path) if config_path.is_dir() => {
                 config_path.push(MIGRA_TOML_FILENAME);
                 config_path
-            },
+            }
             Some(config_path) => config_path,
             None => recursive_find_config_file()?,
         };
@@ -86,5 +85,34 @@ impl Config {
         println!("Created {}", MIGRA_TOML_FILENAME);
 
         Ok(())
+    }
+}
+
+impl Config {
+    pub fn directory_path(&self) -> PathBuf {
+        PathBuilder::from(&self.root)
+            .append(&self.directory)
+            .build()
+    }
+
+    pub fn migration_dirs(&self) -> io::Result<Vec<PathBuf>> {
+        let mut entries = self
+            .directory_path()
+            .read_dir()?
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, io::Error>>()?;
+
+        entries.sort();
+
+        let migration_dir_entries = entries
+            .into_iter()
+            .filter(|entry| {
+                entry.is_dir()
+                    && PathBuilder::from(entry).append("up.sql").build().exists()
+                    && PathBuilder::from(entry).append("down.sql").build().exists()
+            })
+            .collect::<Vec<_>>();
+
+        Ok(migration_dir_entries)
     }
 }
