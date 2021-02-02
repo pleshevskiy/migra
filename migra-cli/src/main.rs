@@ -3,9 +3,10 @@
 mod config;
 mod opts;
 
+use chrono::Local;
 use config::Config;
 use migra_core::path::PathBuilder;
-use opts::{AppOpt, ApplyCommandOpt, Command, StructOpt};
+use opts::{AppOpt, ApplyCommandOpt, Command, MakeCommandOpt, StructOpt};
 use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -34,6 +35,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Err(err) => {
                     println!("{}", err)
                 }
+            }
+        }
+        Command::Make(MakeCommandOpt { migration_name }) => {
+            let config = Config::read(opt.config)?;
+
+            let now = Local::now().format("%y%m%d%H%M%S");
+
+            let migration_name: String = migration_name
+                .to_lowercase()
+                .chars()
+                .map(|c| match c {
+                    '0'..='9' | 'a'..='z' => c,
+                    _ => '_',
+                })
+                .collect();
+
+            let new_dir_path = PathBuilder::from(config.directory_path())
+                .append(format!("{}_{}", now, migration_name))
+                .build();
+            if !new_dir_path.exists() {
+                fs::create_dir(&new_dir_path)?;
+            }
+
+            let upgrade_migration_path = PathBuilder::from(&new_dir_path).append("up.sql").build();
+            if !upgrade_migration_path.exists() {
+                fs::write(upgrade_migration_path, "-- Your SQL goes here\n\n")?;
+            }
+
+            let down_migration_path = PathBuilder::from(&new_dir_path).append("down.sql").build();
+            if !down_migration_path.exists() {
+                fs::write(
+                    down_migration_path,
+                    "-- This file should undo anything in `up.sql`\n\n",
+                )?;
             }
         }
         Command::List => {

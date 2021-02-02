@@ -17,6 +17,8 @@ pub(crate) enum Command {
 
     Apply(ApplyCommandOpt),
 
+    Make(MakeCommandOpt),
+
     #[structopt(name = "list", visible_alias = "ls")]
     List,
 
@@ -31,4 +33,10 @@ pub(crate) enum Command {
 pub(crate) struct ApplyCommandOpt {
     #[structopt(parse(from_str))]
     pub file_name: String,
+}
+
+#[derive(Debug, StructOpt)]
+pub(crate) struct MakeCommandOpt {
+    #[structopt(parse(from_str))]
+    pub migration_name: String,
 }
