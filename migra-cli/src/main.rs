@@ -51,22 +51,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 })
                 .collect();
 
-            let new_dir_path = PathBuilder::from(config.directory_path())
+            let migration_dir_path = PathBuilder::from(config.directory_path())
                 .append(format!("{}_{}", now, migration_name))
                 .build();
-            if !new_dir_path.exists() {
-                fs::create_dir(&new_dir_path)?;
+            if !migration_dir_path.exists() {
+                fs::create_dir(&migration_dir_path)?;
             }
 
-            let upgrade_migration_path = PathBuilder::from(&new_dir_path).append("up.sql").build();
+            let upgrade_migration_path = PathBuilder::from(&migration_dir_path)
+                .append("up.sql")
+                .build();
             if !upgrade_migration_path.exists() {
                 fs::write(upgrade_migration_path, "-- Your SQL goes here\n\n")?;
             }
 
-            let down_migration_path = PathBuilder::from(&new_dir_path).append("down.sql").build();
-            if !down_migration_path.exists() {
+            let downgrade_migration_path = PathBuilder::from(&migration_dir_path)
+                .append("down.sql")
+                .build();
+            if !downgrade_migration_path.exists() {
                 fs::write(
-                    down_migration_path,
+                    downgrade_migration_path,
                     "-- This file should undo anything in `up.sql`\n\n",
                 )?;
             }
