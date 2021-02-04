@@ -53,11 +53,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 })
                 .collect();
 
-            let migration_dir_path = PathBuilder::from(config.directory_path())
+            let migration_dir_path = PathBuilder::from(config.migration_dir_path())
                 .append(format!("{}_{}", now, migration_name))
                 .build();
             if !migration_dir_path.exists() {
-                fs::create_dir(&migration_dir_path)?;
+                fs::create_dir_all(&migration_dir_path)?;
             }
 
             let upgrade_migration_path = PathBuilder::from(&migration_dir_path)

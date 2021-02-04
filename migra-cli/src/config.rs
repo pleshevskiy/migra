@@ -95,9 +95,15 @@ impl Config {
             .build()
     }
 
+    pub fn migration_dir_path(&self) -> PathBuf {
+        PathBuilder::from(&self.directory_path())
+            .append("migrations")
+            .build()
+    }
+
     pub fn migration_dirs(&self) -> io::Result<Vec<PathBuf>> {
         let mut entries = self
-            .directory_path()
+            .migration_dir_path()
             .read_dir()?
             .map(|res| res.map(|e| e.path()))
             .collect::<Result<Vec<_>, io::Error>>()?;
