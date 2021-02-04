@@ -1,5 +1,4 @@
 [workspace]
 members = [
-    "migra-core",
     "migra-cli"
 ]

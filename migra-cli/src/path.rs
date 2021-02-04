@@ -15,12 +15,6 @@ impl<P: AsRef<Path>> From<P> for PathBuilder {
 }
 
 impl PathBuilder {
-    pub fn new<P: AsRef<Path>>() -> Self {
-        PathBuilder {
-            buf: PathBuf::new(),
-        }
-    }
-
     pub fn append<P: AsRef<Path>>(&mut self, path: P) -> &mut Self {
         self.buf.push(path);
         self

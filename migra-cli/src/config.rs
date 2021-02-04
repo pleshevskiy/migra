@@ -1,4 +1,4 @@
-use migra_core::path::PathBuilder;
+use crate::path::PathBuilder;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::{fs, io};

@@ -1,12 +1,14 @@
 #![deny(clippy::all)]
 
 mod config;
+mod database;
 mod opts;
+mod path;
 
 use chrono::Local;
 use config::Config;
-use migra_core::path::PathBuilder;
 use opts::{AppOpt, ApplyCommandOpt, Command, MakeCommandOpt, StructOpt};
+use path::PathBuilder;
 use std::fs;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::Apply(ApplyCommandOpt { file_name }) => {
             let config = Config::read(opt.config)?;
 
-            let mut client = migra_core::database::connect(&config.database.connection)?;
+            let mut client = database::connect(&config.database.connection)?;
 
             let file_path = PathBuilder::from(config.directory_path())
                 .append(file_name)
@@ -28,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let content = fs::read_to_string(file_path)?;
 
-            match migra_core::database::apply_sql(&mut client, &content) {
+            match database::apply_sql(&mut client, &content) {
                 Ok(_) => {
                     println!("File was applied successfully")
                 }
