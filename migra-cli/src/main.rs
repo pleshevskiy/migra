@@ -89,8 +89,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 applied_migrations
                     .iter()
+                    .rev()
                     .for_each(|name| println!("{}", name));
             }
+
+            println!();
 
             let pending_migrations = config.migrations()?
                 .into_iter()
