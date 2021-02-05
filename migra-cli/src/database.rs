@@ -40,3 +40,7 @@ pub fn create_migration_table(client: &mut Client) -> Result<(), Error> {
 pub fn insert_migration_info(client: &mut Client, name: &str) -> Result<u64, Error> {
     client.execute("INSERT INTO migrations (name) VALUES ($1)", &[&name])
 }
+
+pub fn delete_migration_info(client: &mut Client, name: &str) -> Result<u64, Error> {
+    client.execute("DELETE FROM migrations WHERE name = $1", &[&name])
+}

@@ -123,13 +123,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .iter()
                     .filter(|m| !applied_migrations.contains(m.name()))
                 {
-                    println!("{}", m.name());
+                    println!("upgrade {}...", m.name());
                     m.upgrade(&mut client)?;
                 }
             }
         }
         Command::Downgrade => {
-            unimplemented!();
+            let config = Config::read(opt.config)?;
+
+            let mut client = database::connect(&config.database.connection)?;
+
+            let applied_migrations = database::applied_migrations(&mut client)?;
+            let migrations = config.migrations()?;
+
+            if let Some(first_applied_migration) = applied_migrations.first() {
+                if let Some(migration) = migrations.iter().find(|m| m.name() == first_applied_migration) {
+                    println!("downgrade {}...", migration.name());
+                    migration.downgrade(&mut client)?;
+                }
+            }
         }
     }
 

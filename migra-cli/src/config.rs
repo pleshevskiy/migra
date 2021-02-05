@@ -133,6 +133,16 @@ impl Migration {
 
         Ok(())
     }
+
+    pub fn downgrade(&self, client: &mut Client) -> Result<(), Box<dyn std::error::Error + 'static>> {
+        let content = fs::read_to_string(&self.downgrade_sql)?;
+
+        database::apply_sql(client, &content)?;
+
+        database::delete_migration_info(client, self.name())?;
+
+        Ok(())
+    }
 }
 
 impl Config {
