@@ -80,20 +80,55 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::List => {
             let config = Config::read(opt.config)?;
 
-            let migration_dirs = config.migration_dirs()?;
-            if migration_dirs.is_empty() {
-                println!(
-                    "You haven't migrations in {}",
-                    config.directory_path().to_str().unwrap()
-                );
+            let mut client = database::connect(&config.database.connection)?;
+            let applied_migrations = database::applied_migrations(&mut client)?;
+
+            println!("Applied migrations:");
+            if applied_migrations.is_empty() {
+                println!("–")
             } else {
-                migration_dirs.iter().for_each(|dir| {
-                    let file_name = dir.file_name().and_then(|name| name.to_str()).unwrap();
-                    println!("{}", file_name);
+                applied_migrations
+                    .iter()
+                    .for_each(|name| println!("{}", name));
+            }
+
+            let pending_migrations = config.migrations()?
+                .into_iter()
+                .filter(|m| !applied_migrations.contains(m.name()))
+                .collect::<Vec<_>>();
+            println!("Pending migrations:");
+            if pending_migrations.is_empty() {
+                println!("–");
+            } else {
+                pending_migrations.iter().for_each(|m| {
+                    println!("{}", m.name());
                 });
             }
         }
-        Command::Upgrade | Command::Downgrade => {
+        Command::Upgrade => {
+            let config = Config::read(opt.config)?;
+
+            let mut client = database::connect(&config.database.connection)?;
+
+            let applied_migrations = database::applied_migrations(&mut client)?;
+
+            let migrations = config.migrations()?;
+
+            if migrations.is_empty()
+                || migrations.last().map(|m| m.name()) == applied_migrations.first()
+            {
+                println!("Up to date");
+            } else {
+                for m in migrations
+                    .iter()
+                    .filter(|m| !applied_migrations.contains(m.name()))
+                {
+                    println!("{}", m.name());
+                    m.upgrade(&mut client)?;
+                }
+            }
+        }
+        Command::Downgrade => {
             unimplemented!();
         }
     }

@@ -1,4 +1,6 @@
+use crate::database;
 use crate::path::PathBuilder;
+use postgres::Client;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::{fs, io};
@@ -88,6 +90,51 @@ impl Config {
     }
 }
 
+pub struct Migration {
+    upgrade_sql: PathBuf,
+    downgrade_sql: PathBuf,
+    name: String,
+}
+
+impl Migration {
+    fn new(directory: &PathBuf) -> Option<Migration> {
+        if directory.is_dir() {
+            let name = directory
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or_default();
+            let upgrade_sql = PathBuilder::from(directory).append("up.sql").build();
+            let downgrade_sql = PathBuilder::from(directory).append("down.sql").build();
+
+            if upgrade_sql.exists() && downgrade_sql.exists() {
+                return Some(Migration {
+                    upgrade_sql,
+                    downgrade_sql,
+                    name: String::from(name),
+                });
+            }
+        }
+
+        None
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn upgrade(&self, client: &mut Client) -> Result<(), Box<dyn std::error::Error + 'static>> {
+        let content = fs::read_to_string(&self.upgrade_sql)?;
+
+        database::create_migration_table(client)?;
+
+        database::apply_sql(client, &content)?;
+
+        database::insert_migration_info(client, self.name())?;
+
+        Ok(())
+    }
+}
+
 impl Config {
     pub fn directory_path(&self) -> PathBuf {
         PathBuilder::from(&self.root)
@@ -101,7 +148,7 @@ impl Config {
             .build()
     }
 
-    pub fn migration_dirs(&self) -> io::Result<Vec<PathBuf>> {
+    pub fn migrations(&self) -> io::Result<Vec<Migration>> {
         let mut entries = self
             .migration_dir_path()
             .read_dir()?
@@ -110,15 +157,11 @@ impl Config {
 
         entries.sort();
 
-        let migration_dir_entries = entries
-            .into_iter()
-            .filter(|entry| {
-                entry.is_dir()
-                    && PathBuilder::from(entry).append("up.sql").build().exists()
-                    && PathBuilder::from(entry).append("down.sql").build().exists()
-            })
+        let migrations = entries
+            .iter()
+            .filter_map(Migration::new)
             .collect::<Vec<_>>();
 
-        Ok(migration_dir_entries)
+        Ok(migrations)
     }
 }
