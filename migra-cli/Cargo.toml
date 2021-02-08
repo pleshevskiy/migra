@@ -9,6 +9,7 @@ repository = "https://github.com/pleshevskiy/migra"
 license = "MIT OR Apache-2.0"
 keywords = ["migration", "cli", "sql", "manager"]
 categories = ["accessibility", "database", "command-line-interface"]
+readme = "../README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [[bin]]
