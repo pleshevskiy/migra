@@ -2,6 +2,7 @@
 
 mod config;
 mod database;
+mod migration;
 mod opts;
 mod path;
 
