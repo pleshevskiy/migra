@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match opt.command {
         Command::Init => {
-            Config::initialize()?;
+            Config::initialize(opt.config)?;
         }
         Command::Apply(ApplyCommandOpt { file_name }) => {
             let config = Config::read(opt.config)?;

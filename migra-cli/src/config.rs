@@ -83,17 +83,30 @@ impl Config {
         }
     }
 
-    pub fn initialize() -> Result<(), Box<dyn std::error::Error>> {
-        if Path::new(MIGRA_TOML_FILENAME).exists() {
-            println!("{} already exists", MIGRA_TOML_FILENAME);
+    pub fn initialize(config_path: Option<PathBuf>) -> Result<(), Box<dyn std::error::Error>> {
+        let config_path = config_path
+            .map(|mut config_path| {
+                let ext = config_path.extension();
+                if config_path.is_dir() || ext.is_none() {
+                    config_path.push(MIGRA_TOML_FILENAME);
+                }
+
+                config_path
+            })
+            .unwrap_or_else(|| PathBuf::from(MIGRA_TOML_FILENAME));
+
+        if config_path.exists() {
+            println!("{} already exists", config_path.to_str().unwrap());
             return Ok(());
+        } else if let Some(dirs) = config_path.parent() {
+            fs::create_dir_all(dirs)?;
         }
 
         let config = Config::default();
         let content = toml::to_string(&config)?;
-        fs::write(MIGRA_TOML_FILENAME, content)?;
+        fs::write(&config_path, content)?;
 
-        println!("Created {}", MIGRA_TOML_FILENAME);
+        println!("Created {}", config_path.to_str().unwrap());
 
         Ok(())
     }
