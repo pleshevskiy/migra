@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::Apply(ApplyCommandOpt { file_name }) => {
             let config = Config::read(opt.config)?;
 
-            let mut client = database::connect(&config.database.connection)?;
+            let mut client = database::connect(&config.database_connection())?;
 
             let file_path = PathBuilder::from(config.directory_path())
                 .append(file_name)
@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::List => {
             let config = Config::read(opt.config)?;
 
-            let mut client = database::connect(&config.database.connection)?;
+            let mut client = database::connect(&config.database_connection())?;
             let applied_migrations = database::applied_migrations(&mut client)?;
 
             println!("Applied migrations:");
@@ -95,7 +95,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             println!();
 
-            let pending_migrations = config.migrations()?
+            let pending_migrations = config
+                .migrations()?
                 .into_iter()
                 .filter(|m| !applied_migrations.contains(m.name()))
                 .collect::<Vec<_>>();
@@ -111,7 +112,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::Upgrade => {
             let config = Config::read(opt.config)?;
 
-            let mut client = database::connect(&config.database.connection)?;
+            let mut client = database::connect(&config.database_connection())?;
 
             let applied_migrations = database::applied_migrations(&mut client)?;
 
@@ -134,13 +135,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::Downgrade => {
             let config = Config::read(opt.config)?;
 
-            let mut client = database::connect(&config.database.connection)?;
+            let mut client = database::connect(&config.database_connection())?;
 
             let applied_migrations = database::applied_migrations(&mut client)?;
             let migrations = config.migrations()?;
 
             if let Some(first_applied_migration) = applied_migrations.first() {
-                if let Some(migration) = migrations.iter().find(|m| m.name() == first_applied_migration) {
+                if let Some(migration) = migrations
+                    .iter()
+                    .find(|m| m.name() == first_applied_migration)
+                {
                     println!("downgrade {}...", migration.name());
                     migration.downgrade(&mut client)?;
                 }

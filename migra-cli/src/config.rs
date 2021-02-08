@@ -3,21 +3,25 @@ use crate::path::PathBuilder;
 use postgres::Client;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use std::{fs, io};
+use std::{env, fs, io};
 
 const MIGRA_TOML_FILENAME: &str = "Migra.toml";
+const DEFAULT_DATABASE_CONNECTION_ENV: &str = "$DATABASE_URL";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Config {
     #[serde(skip)]
-    pub root: PathBuf,
-    pub directory: PathBuf,
-    pub database: DatabaseConfig,
+    root: PathBuf,
+
+    directory: PathBuf,
+
+    #[serde(default)]
+    database: DatabaseConfig,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub(crate) struct DatabaseConfig {
-    pub connection: String,
+    pub connection: Option<String>,
 }
 
 impl Default for Config {
@@ -26,7 +30,7 @@ impl Default for Config {
             root: PathBuf::new(),
             directory: PathBuf::from("database"),
             database: DatabaseConfig {
-                connection: String::new(),
+                connection: Some(String::from(DEFAULT_DATABASE_CONNECTION_ENV)),
             },
         }
     }
@@ -57,21 +61,26 @@ impl Config {
         let config_path = match config_path {
             Some(mut config_path) if config_path.is_dir() => {
                 config_path.push(MIGRA_TOML_FILENAME);
-                config_path
+                Some(config_path)
             }
-            Some(config_path) => config_path,
-            None => recursive_find_config_file()?,
+            Some(config_path) => Some(config_path),
+            None => recursive_find_config_file().ok(),
         };
 
-        let content = fs::read_to_string(&config_path)?;
+        match config_path {
+            None => Ok(Config::default()),
+            Some(config_path) => {
+                let content = fs::read_to_string(&config_path)?;
 
-        let mut config: Config = toml::from_str(&content).expect("Cannot parse Migra.toml");
-        config.root = config_path
-            .parent()
-            .unwrap_or_else(|| Path::new(""))
-            .to_path_buf();
+                let mut config: Config = toml::from_str(&content).expect("Cannot parse Migra.toml");
+                config.root = config_path
+                    .parent()
+                    .unwrap_or_else(|| Path::new(""))
+                    .to_path_buf();
 
-        Ok(config)
+                Ok(config)
+            }
+        }
     }
 
     pub fn initialize() -> Result<(), Box<dyn std::error::Error>> {
@@ -90,6 +99,56 @@ impl Config {
     }
 }
 
+impl Config {
+    pub fn directory_path(&self) -> PathBuf {
+        PathBuilder::from(&self.root)
+            .append(&self.directory)
+            .build()
+    }
+
+    pub fn database_connection(&self) -> String {
+        let connection = self
+            .database
+            .connection
+            .clone()
+            .unwrap_or_else(|| String::from(DEFAULT_DATABASE_CONNECTION_ENV));
+        if let Some(connection_env) = connection.strip_prefix("$") {
+            env::var(connection_env).unwrap_or_else(|_| {
+                panic!(
+                    r#"You need to provide "{}" environment variable"#,
+                    connection_env
+                )
+            })
+        } else {
+            connection
+        }
+    }
+
+    pub fn migration_dir_path(&self) -> PathBuf {
+        PathBuilder::from(&self.directory_path())
+            .append("migrations")
+            .build()
+    }
+
+    pub fn migrations(&self) -> io::Result<Vec<Migration>> {
+        let mut entries = self
+            .migration_dir_path()
+            .read_dir()?
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, io::Error>>()?;
+
+        entries.sort();
+
+        let migrations = entries
+            .iter()
+            .filter_map(Migration::new)
+            .collect::<Vec<_>>();
+
+        Ok(migrations)
+    }
+}
+
+#[derive(Debug)]
 pub struct Migration {
     upgrade_sql: PathBuf,
     downgrade_sql: PathBuf,
@@ -134,7 +193,10 @@ impl Migration {
         Ok(())
     }
 
-    pub fn downgrade(&self, client: &mut Client) -> Result<(), Box<dyn std::error::Error + 'static>> {
+    pub fn downgrade(
+        &self,
+        client: &mut Client,
+    ) -> Result<(), Box<dyn std::error::Error + 'static>> {
         let content = fs::read_to_string(&self.downgrade_sql)?;
 
         database::apply_sql(client, &content)?;
@@ -142,36 +204,5 @@ impl Migration {
         database::delete_migration_info(client, self.name())?;
 
         Ok(())
-    }
-}
-
-impl Config {
-    pub fn directory_path(&self) -> PathBuf {
-        PathBuilder::from(&self.root)
-            .append(&self.directory)
-            .build()
-    }
-
-    pub fn migration_dir_path(&self) -> PathBuf {
-        PathBuilder::from(&self.directory_path())
-            .append("migrations")
-            .build()
-    }
-
-    pub fn migrations(&self) -> io::Result<Vec<Migration>> {
-        let mut entries = self
-            .migration_dir_path()
-            .read_dir()?
-            .map(|res| res.map(|e| e.path()))
-            .collect::<Result<Vec<_>, io::Error>>()?;
-
-        entries.sort();
-
-        let migrations = entries
-            .iter()
-            .filter_map(Migration::new)
-            .collect::<Vec<_>>();
-
-        Ok(migrations)
     }
 }
