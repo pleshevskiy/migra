@@ -1,3 +1,4 @@
+use crate::error::{Error, ErrorKind};
 use crate::migration::Migration;
 use crate::path::PathBuilder;
 use serde::{Deserialize, Serialize};
@@ -118,21 +119,17 @@ impl Config {
             .build()
     }
 
-    pub fn database_connection(&self) -> String {
+    pub fn database_connection_string(&self) -> crate::error::Result<String> {
         let connection = self
             .database
             .connection
             .clone()
             .unwrap_or_else(|| String::from(DEFAULT_DATABASE_CONNECTION_ENV));
         if let Some(connection_env) = connection.strip_prefix("$") {
-            env::var(connection_env).unwrap_or_else(|_| {
-                panic!(
-                    r#"You need to provide "{}" environment variable"#,
-                    connection_env
-                )
-            })
+            env::var(connection_env)
+                .map_err(|e| Error::new(ErrorKind::MissedEnvVar(connection_env.to_string()), e))
         } else {
-            connection
+            Ok(connection)
         }
     }
 
@@ -143,11 +140,16 @@ impl Config {
     }
 
     pub fn migrations(&self) -> io::Result<Vec<Migration>> {
-        let mut entries = self
-            .migration_dir_path()
-            .read_dir()?
-            .map(|res| res.map(|e| e.path()))
-            .collect::<Result<Vec<_>, io::Error>>()?;
+        let mut entries = match self.migration_dir_path().read_dir() {
+            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+            entries => entries?
+                .map(|res| res.map(|e| e.path()))
+                .collect::<Result<Vec<_>, io::Error>>()?,
+        };
+
+        if entries.is_empty() {
+            return Ok(vec![]);
+        }
 
         entries.sort();
 

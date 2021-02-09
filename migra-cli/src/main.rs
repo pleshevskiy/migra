@@ -2,15 +2,19 @@
 
 mod config;
 mod database;
+mod error;
 mod migration;
 mod opts;
 mod path;
 
 use chrono::Local;
 use config::Config;
+use error::ErrorKind;
 use opts::{AppOpt, ApplyCommandOpt, Command, MakeCommandOpt, StructOpt};
 use path::PathBuilder;
 use std::fs;
+
+const EM_DASH: char = '—';
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = AppOpt::from_args();
@@ -22,7 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::Apply(ApplyCommandOpt { file_name }) => {
             let config = Config::read(opt.config)?;
 
-            let mut client = database::connect(&config.database_connection())?;
+            let database_connection_string = &config.database_connection_string()?;
+            let mut client = database::connect(database_connection_string)?;
 
             let file_path = PathBuilder::from(config.directory_path())
                 .append(file_name)
@@ -81,18 +86,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::List => {
             let config = Config::read(opt.config)?;
 
-            let mut client = database::connect(&config.database_connection())?;
-            let applied_migrations = database::applied_migrations(&mut client)?;
+            let applied_migrations = match config.database_connection_string() {
+                Ok(ref database_connection_string) => {
+                    let mut client = database::connect(database_connection_string)?;
+                    let applied_migrations = database::applied_migrations(&mut client)?;
 
-            println!("Applied migrations:");
-            if applied_migrations.is_empty() {
-                println!("–")
-            } else {
-                applied_migrations
-                    .iter()
-                    .rev()
-                    .for_each(|name| println!("{}", name));
-            }
+                    println!("Applied migrations:");
+                    if applied_migrations.is_empty() {
+                        println!("{}", EM_DASH);
+                    } else {
+                        applied_migrations
+                            .iter()
+                            .rev()
+                            .for_each(|name| println!("{}", name));
+                    }
+
+                    applied_migrations
+                }
+                Err(e) if *e.kind() == ErrorKind::MissedEnvVar(String::new()) => {
+                    println!("{}", e.kind());
+                    println!("No connection to database");
+
+                    Vec::new()
+                }
+                Err(e) => panic!(e),
+            };
 
             println!();
 
@@ -103,7 +121,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .collect::<Vec<_>>();
             println!("Pending migrations:");
             if pending_migrations.is_empty() {
-                println!("–");
+                println!("{}", EM_DASH);
             } else {
                 pending_migrations.iter().for_each(|m| {
                     println!("{}", m.name());
@@ -113,7 +131,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::Upgrade => {
             let config = Config::read(opt.config)?;
 
-            let mut client = database::connect(&config.database_connection())?;
+            let database_connection_string = &config.database_connection_string()?;
+            let mut client = database::connect(database_connection_string)?;
 
             let applied_migrations = database::applied_migrations(&mut client)?;
 
@@ -136,7 +155,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::Downgrade => {
             let config = Config::read(opt.config)?;
 
-            let mut client = database::connect(&config.database_connection())?;
+            let database_connection_string = &config.database_connection_string()?;
+            let mut client = database::connect(database_connection_string)?;
 
             let applied_migrations = database::applied_migrations(&mut client)?;
             let migrations = config.migrations()?;
