@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres
+    container_name: migra.postgres
+    environment:
+      POSTGRES_DB: "migra_tests"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    volumes:
+      - postgres_data:/var/lib/postgres/data
+    ports:
+      - 6000:5432
+
+volumes:
+  postgres_data:
+    driver: local

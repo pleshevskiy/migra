@@ -1,0 +1,4 @@
+directory = "database"
+
+[database]
+connection = "$DB_URL"
