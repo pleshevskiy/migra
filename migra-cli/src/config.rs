@@ -5,15 +5,15 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
-const MIGRA_TOML_FILENAME: &str = "Migra.toml";
-const DEFAULT_DATABASE_CONNECTION_ENV: &str = "$DATABASE_URL";
+pub(crate) const MIGRA_TOML_FILENAME: &str = "Migra.toml";
+pub(crate) const DEFAULT_DATABASE_CONNECTION_ENV: &str = "$DATABASE_URL";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Config {
     #[serde(skip)]
-    root: PathBuf,
+    manifest_root: PathBuf,
 
-    directory: PathBuf,
+    root: PathBuf,
 
     #[serde(default)]
     database: DatabaseConfig,
@@ -27,8 +27,8 @@ pub(crate) struct DatabaseConfig {
 impl Default for Config {
     fn default() -> Config {
         Config {
-            root: PathBuf::new(),
-            directory: PathBuf::from("database"),
+            manifest_root: PathBuf::new(),
+            root: PathBuf::from("database"),
             database: DatabaseConfig {
                 connection: Some(String::from(DEFAULT_DATABASE_CONNECTION_ENV)),
             },
@@ -73,7 +73,7 @@ impl Config {
                 let content = fs::read_to_string(&config_path)?;
 
                 let mut config: Config = toml::from_str(&content).expect("Cannot parse Migra.toml");
-                config.root = config_path
+                config.manifest_root = config_path
                     .parent()
                     .unwrap_or_else(|| Path::new(""))
                     .to_path_buf();
@@ -82,40 +82,12 @@ impl Config {
             }
         }
     }
-
-    pub fn initialize(config_path: Option<PathBuf>) -> Result<(), Box<dyn std::error::Error>> {
-        let config_path = config_path
-            .map(|mut config_path| {
-                let ext = config_path.extension();
-                if config_path.is_dir() || ext.is_none() {
-                    config_path.push(MIGRA_TOML_FILENAME);
-                }
-
-                config_path
-            })
-            .unwrap_or_else(|| PathBuf::from(MIGRA_TOML_FILENAME));
-
-        if config_path.exists() {
-            println!("{} already exists", config_path.to_str().unwrap());
-            return Ok(());
-        } else if let Some(dirs) = config_path.parent() {
-            fs::create_dir_all(dirs)?;
-        }
-
-        let config = Config::default();
-        let content = toml::to_string(&config)?;
-        fs::write(&config_path, content)?;
-
-        println!("Created {}", config_path.to_str().unwrap());
-
-        Ok(())
-    }
 }
 
 impl Config {
     pub fn directory_path(&self) -> PathBuf {
-        PathBuilder::from(&self.root)
-            .append(&self.directory)
+        PathBuilder::from(&self.manifest_root)
+            .append(&self.root)
             .build()
     }
 

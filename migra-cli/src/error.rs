@@ -3,6 +3,7 @@ use std::fmt;
 use std::mem;
 use std::result;
 
+pub type StdResult<T> = result::Result<T, Box<dyn std::error::Error>>;
 pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
