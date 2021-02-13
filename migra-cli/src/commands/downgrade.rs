@@ -1,12 +1,12 @@
 use crate::config::Config;
-use crate::database;
+use crate::database::DatabaseConnection;
 use crate::StdResult;
+use std::convert::TryFrom;
 
 pub(crate) fn downgrade_applied_migrations(config: Config) -> StdResult<()> {
-    let database_connection_string = &config.database_connection_string()?;
-    let mut client = database::connect(database_connection_string)?;
+    let mut connection = DatabaseConnection::try_from(&config)?;
 
-    let applied_migrations = database::applied_migrations(&mut client)?;
+    let applied_migrations = connection.applied_migration_names()?;
     let migrations = config.migrations()?;
 
     if let Some(first_applied_migration) = applied_migrations.first() {
@@ -15,7 +15,7 @@ pub(crate) fn downgrade_applied_migrations(config: Config) -> StdResult<()> {
             .find(|m| m.name() == first_applied_migration)
         {
             println!("downgrade {}...", migration.name());
-            migration.downgrade(&mut client)?;
+            migration.downgrade(&mut connection)?;
         }
     }
 

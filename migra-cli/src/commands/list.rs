@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::database;
+use crate::database::DatabaseConnection;
 use crate::error::{ErrorKind, StdResult};
 
 const EM_DASH: char = '—';
@@ -7,8 +7,8 @@ const EM_DASH: char = '—';
 pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
     let applied_migrations = match config.database_connection_string() {
         Ok(ref database_connection_string) => {
-            let mut client = database::connect(database_connection_string)?;
-            let applied_migrations = database::applied_migrations(&mut client)?;
+            let mut connection = DatabaseConnection::connect(database_connection_string)?;
+            let applied_migrations = connection.applied_migration_names()?;
 
             println!("Applied migrations:");
             if applied_migrations.is_empty() {

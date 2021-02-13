@@ -1,6 +1,5 @@
-use crate::database;
+use crate::database::DatabaseConnection;
 use crate::path::PathBuilder;
-use postgres::Client;
 use std::fs;
 use std::path::PathBuf;
 
@@ -37,27 +36,27 @@ impl Migration {
         &self.name
     }
 
-    pub fn upgrade(&self, client: &mut Client) -> Result<(), Box<dyn std::error::Error + 'static>> {
+    pub fn upgrade(
+        &self,
+        connection: &mut DatabaseConnection,
+    ) -> Result<(), Box<dyn std::error::Error + 'static>> {
         let content = fs::read_to_string(&self.upgrade_sql)?;
 
-        database::create_migrations_table(client)?;
-
-        database::apply_sql(client, &content)?;
-
-        database::insert_migration_info(client, self.name())?;
+        connection.create_migrations_table()?;
+        connection.apply_sql(&content)?;
+        connection.insert_migration_info(self.name())?;
 
         Ok(())
     }
 
     pub fn downgrade(
         &self,
-        client: &mut Client,
+        connection: &mut DatabaseConnection,
     ) -> Result<(), Box<dyn std::error::Error + 'static>> {
         let content = fs::read_to_string(&self.downgrade_sql)?;
 
-        database::apply_sql(client, &content)?;
-
-        database::delete_migration_info(client, self.name())?;
+        connection.apply_sql(&content)?;
+        connection.delete_migration_info(self.name())?;
 
         Ok(())
     }

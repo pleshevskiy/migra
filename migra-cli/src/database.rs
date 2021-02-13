@@ -1,11 +1,25 @@
+use crate::config::Config;
+use crate::StdResult;
 use postgres::{Client, Error, NoTls};
+use std::convert::TryFrom;
 
-pub fn connect(connection_string: &str) -> Result<Client, Error> {
-    Client::connect(connection_string, NoTls)
+pub struct DatabaseConnection {
+    client: Client,
 }
 
-pub fn apply_sql(client: &mut Client, sql_content: &str) -> Result<(), Error> {
-    client.batch_execute(sql_content)
+impl TryFrom<&Config> for DatabaseConnection {
+    type Error = Box<dyn std::error::Error>;
+
+    fn try_from(config: &Config) -> Result<Self, Self::Error> {
+        DatabaseConnection::connect(&config.database_connection_string()?)
+    }
+}
+
+impl DatabaseConnection {
+    pub fn connect(connection_string: &str) -> StdResult<DatabaseConnection> {
+        let client = Client::connect(connection_string, NoTls)?;
+        Ok(DatabaseConnection { client })
+    }
 }
 
 pub fn is_migrations_table_not_found(e: &Error) -> bool {
@@ -13,34 +27,42 @@ pub fn is_migrations_table_not_found(e: &Error) -> bool {
         .contains(r#"relation "migrations" does not exist"#)
 }
 
-pub fn applied_migrations(client: &mut Client) -> Result<Vec<String>, Error> {
-    let res = client
-        .query("SELECT name FROM migrations ORDER BY id DESC", &[])
-        .or_else(|e| {
-            if is_migrations_table_not_found(&e) {
-                Ok(Vec::new())
-            } else {
-                Err(e)
-            }
-        })?;
+impl DatabaseConnection {
+    pub fn apply_sql(&mut self, sql_content: &str) -> Result<(), Error> {
+        self.client.batch_execute(sql_content)
+    }
 
-    Ok(res.into_iter().map(|row| row.get(0)).collect())
-}
+    pub fn applied_migration_names(&mut self) -> Result<Vec<String>, Error> {
+        let res = self
+            .client
+            .query("SELECT name FROM migrations ORDER BY id DESC", &[])
+            .or_else(|e| {
+                if is_migrations_table_not_found(&e) {
+                    Ok(Vec::new())
+                } else {
+                    Err(e)
+                }
+            })?;
 
-pub fn create_migrations_table(client: &mut Client) -> Result<(), Error> {
-    apply_sql(
-        client,
-        r#"CREATE TABLE IF NOT EXISTS migrations (
-            id      serial      PRIMARY KEY,
-            name    text        NOT NULL UNIQUE
-        )"#,
-    )
-}
+        Ok(res.into_iter().map(|row| row.get(0)).collect())
+    }
 
-pub fn insert_migration_info(client: &mut Client, name: &str) -> Result<u64, Error> {
-    client.execute("INSERT INTO migrations (name) VALUES ($1)", &[&name])
-}
+    pub fn create_migrations_table(&mut self) -> Result<(), Error> {
+        self.apply_sql(
+            r#"CREATE TABLE IF NOT EXISTS migrations (
+                id      serial      PRIMARY KEY,
+                name    text        NOT NULL UNIQUE
+            )"#,
+        )
+    }
 
-pub fn delete_migration_info(client: &mut Client, name: &str) -> Result<u64, Error> {
-    client.execute("DELETE FROM migrations WHERE name = $1", &[&name])
+    pub fn insert_migration_info(&mut self, name: &str) -> Result<u64, Error> {
+        self.client
+            .execute("INSERT INTO migrations (name) VALUES ($1)", &[&name])
+    }
+
+    pub fn delete_migration_info(&mut self, name: &str) -> Result<u64, Error> {
+        self.client
+            .execute("DELETE FROM migrations WHERE name = $1", &[&name])
+    }
 }
