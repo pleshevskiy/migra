@@ -1,7 +1,16 @@
 use crate::database::DatabaseConnection;
 use crate::path::PathBuilder;
+use crate::StdResult;
 use std::fs;
 use std::path::PathBuf;
+
+pub trait Upgrade {
+    fn upgrade(&self, connection: &mut DatabaseConnection) -> StdResult<()>;
+}
+
+pub trait Downgrade {
+    fn downgrade(&self, connection: &mut DatabaseConnection) -> StdResult<()>;
+}
 
 #[derive(Debug)]
 pub struct Migration {
@@ -31,15 +40,16 @@ impl Migration {
 
         None
     }
+}
 
+impl Migration {
     pub fn name(&self) -> &String {
         &self.name
     }
+}
 
-    pub fn upgrade(
-        &self,
-        connection: &mut DatabaseConnection,
-    ) -> Result<(), Box<dyn std::error::Error + 'static>> {
+impl Upgrade for Migration {
+    fn upgrade(&self, connection: &mut DatabaseConnection) -> StdResult<()> {
         let content = fs::read_to_string(&self.upgrade_sql)?;
 
         connection.create_migrations_table()?;
@@ -48,11 +58,10 @@ impl Migration {
 
         Ok(())
     }
+}
 
-    pub fn downgrade(
-        &self,
-        connection: &mut DatabaseConnection,
-    ) -> Result<(), Box<dyn std::error::Error + 'static>> {
+impl Downgrade for Migration {
+    fn downgrade(&self, connection: &mut DatabaseConnection) -> StdResult<()> {
         let content = fs::read_to_string(&self.downgrade_sql)?;
 
         connection.apply_sql(&content)?;

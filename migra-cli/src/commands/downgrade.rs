@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::database::DatabaseConnection;
+use crate::migration::Downgrade;
 use crate::StdResult;
 use std::convert::TryFrom;
 
