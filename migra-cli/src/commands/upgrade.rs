@@ -1,14 +1,13 @@
-use crate::database;
+use crate::database::DatabaseConnection;
 use crate::migration::Migration;
 use crate::Config;
 use crate::StdResult;
+use std::convert::TryFrom;
 
 pub(crate) fn upgrade_pending_migrations(config: Config) -> StdResult<()> {
-    let database_connection_string = &config.database_connection_string()?;
-    let mut client = database::connect(database_connection_string)?;
+    let mut connection = DatabaseConnection::try_from(&config)?;
 
-    let applied_migration_names = database::applied_migration_names(&mut client)?;
-
+    let applied_migration_names = connection.applied_migration_names()?;
     let migrations = config.migrations()?;
 
     if is_up_to_date_migrations(&migrations, &applied_migration_names) {
@@ -18,7 +17,7 @@ pub(crate) fn upgrade_pending_migrations(config: Config) -> StdResult<()> {
 
         for migration in pending_migrations.iter() {
             println!("upgrade {}...", migration.name());
-            migration.upgrade(&mut client)?;
+            migration.upgrade(&mut connection)?;
         }
     }
 

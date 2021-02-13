@@ -7,7 +7,7 @@ const EM_DASH: char = '—';
 pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
     let applied_migrations = match config.database_connection_string() {
         Ok(ref database_connection_string) => {
-            let mut connection = DatabaseConnection::connect(database_connection_string)?;
+            let mut connection = DatabaseConnection::open(database_connection_string)?;
             let applied_migrations = connection.applied_migration_names()?;
 
             println!("Applied migrations:");

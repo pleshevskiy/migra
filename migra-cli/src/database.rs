@@ -11,12 +11,12 @@ impl TryFrom<&Config> for DatabaseConnection {
     type Error = Box<dyn std::error::Error>;
 
     fn try_from(config: &Config) -> Result<Self, Self::Error> {
-        DatabaseConnection::connect(&config.database_connection_string()?)
+        DatabaseConnection::open(&config.database_connection_string()?)
     }
 }
 
 impl DatabaseConnection {
-    pub fn connect(connection_string: &str) -> StdResult<DatabaseConnection> {
+    pub fn open(connection_string: &str) -> StdResult<DatabaseConnection> {
         let client = Client::connect(connection_string, NoTls)?;
         Ok(DatabaseConnection { client })
     }
