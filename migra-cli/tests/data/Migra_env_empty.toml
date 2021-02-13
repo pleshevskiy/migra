@@ -1,4 +1,4 @@
-directory = "database"
+root = "database"
 
 [database]
 connection = "$DB_URL"

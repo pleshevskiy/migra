@@ -14,7 +14,7 @@ pub const DATABASE_URL_DEFAULT_ENV_NAME: &str = "DATABASE_URL";
 pub const DATABASE_URL_ENV_VALUE: &str = "postgres://postgres:postgres@localhost:6000/migra_tests";
 
 pub struct Env {
-    key: &'static str
+    key: &'static str,
 }
 
 impl Env {
