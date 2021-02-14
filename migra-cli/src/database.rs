@@ -3,22 +3,22 @@ use crate::StdResult;
 use postgres::{Client, Error, NoTls};
 use std::convert::TryFrom;
 
-pub struct DatabaseConnection {
+pub struct PostgresConnection {
     client: Client,
 }
 
-impl TryFrom<&Config> for DatabaseConnection {
+impl TryFrom<&Config> for PostgresConnection {
     type Error = Box<dyn std::error::Error>;
 
     fn try_from(config: &Config) -> Result<Self, Self::Error> {
-        DatabaseConnection::open(&config.database_connection_string()?)
+        PostgresConnection::open(&config.database_connection_string()?)
     }
 }
 
-impl DatabaseConnection {
-    pub fn open(connection_string: &str) -> StdResult<DatabaseConnection> {
+impl PostgresConnection {
+    pub fn open(connection_string: &str) -> StdResult<PostgresConnection> {
         let client = Client::connect(connection_string, NoTls)?;
-        Ok(DatabaseConnection { client })
+        Ok(PostgresConnection { client })
     }
 }
 
@@ -27,7 +27,7 @@ pub fn is_migrations_table_not_found(e: &Error) -> bool {
         .contains(r#"relation "migrations" does not exist"#)
 }
 
-impl DatabaseConnection {
+impl PostgresConnection {
     pub fn apply_sql(&mut self, sql_content: &str) -> Result<(), Error> {
         self.client.batch_execute(sql_content)
     }

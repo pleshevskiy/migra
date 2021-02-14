@@ -1,11 +1,11 @@
 use crate::config::Config;
-use crate::database::DatabaseConnection;
+use crate::database::PostgresConnection;
 use crate::migration::Downgrade;
 use crate::StdResult;
 use std::convert::TryFrom;
 
 pub(crate) fn downgrade_applied_migrations(config: Config) -> StdResult<()> {
-    let mut connection = DatabaseConnection::try_from(&config)?;
+    let mut connection = PostgresConnection::try_from(&config)?;
 
     let applied_migrations = connection.applied_migration_names()?;
     let migrations = config.migrations()?;

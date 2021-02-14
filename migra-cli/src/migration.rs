@@ -1,15 +1,15 @@
-use crate::database::DatabaseConnection;
+use crate::database::PostgresConnection;
 use crate::path::PathBuilder;
 use crate::StdResult;
 use std::fs;
 use std::path::PathBuf;
 
 pub trait Upgrade {
-    fn upgrade(&self, connection: &mut DatabaseConnection) -> StdResult<()>;
+    fn upgrade(&self, connection: &mut PostgresConnection) -> StdResult<()>;
 }
 
 pub trait Downgrade {
-    fn downgrade(&self, connection: &mut DatabaseConnection) -> StdResult<()>;
+    fn downgrade(&self, connection: &mut PostgresConnection) -> StdResult<()>;
 }
 
 #[derive(Debug)]
@@ -49,7 +49,7 @@ impl Migration {
 }
 
 impl Upgrade for Migration {
-    fn upgrade(&self, connection: &mut DatabaseConnection) -> StdResult<()> {
+    fn upgrade(&self, connection: &mut PostgresConnection) -> StdResult<()> {
         let content = fs::read_to_string(&self.upgrade_sql)?;
 
         connection.create_migrations_table()?;
@@ -61,7 +61,7 @@ impl Upgrade for Migration {
 }
 
 impl Downgrade for Migration {
-    fn downgrade(&self, connection: &mut DatabaseConnection) -> StdResult<()> {
+    fn downgrade(&self, connection: &mut PostgresConnection) -> StdResult<()> {
         let content = fs::read_to_string(&self.downgrade_sql)?;
 
         connection.apply_sql(&content)?;

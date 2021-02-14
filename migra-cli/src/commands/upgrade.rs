@@ -1,11 +1,11 @@
-use crate::database::DatabaseConnection;
+use crate::database::PostgresConnection;
 use crate::migration::{Migration, Upgrade};
 use crate::Config;
 use crate::StdResult;
 use std::convert::TryFrom;
 
 pub(crate) fn upgrade_pending_migrations(config: Config) -> StdResult<()> {
-    let mut connection = DatabaseConnection::try_from(&config)?;
+    let mut connection = PostgresConnection::try_from(&config)?;
 
     let applied_migration_names = connection.applied_migration_names()?;
     let migrations = config.migrations()?;

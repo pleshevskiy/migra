@@ -1,12 +1,12 @@
 use crate::config::Config;
-use crate::database::DatabaseConnection;
+use crate::database::PostgresConnection;
 use crate::opts::ApplyCommandOpt;
 use crate::path::PathBuilder;
 use crate::StdResult;
 use std::convert::TryFrom;
 
 pub(crate) fn apply_sql(config: Config, opts: ApplyCommandOpt) -> StdResult<()> {
-    let mut connection = DatabaseConnection::try_from(&config)?;
+    let mut connection = PostgresConnection::try_from(&config)?;
 
     let file_path = PathBuilder::from(config.directory_path())
         .append(opts.file_name)
