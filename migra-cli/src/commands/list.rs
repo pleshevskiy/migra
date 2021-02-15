@@ -1,26 +1,23 @@
 use crate::config::Config;
-use crate::database::PostgresConnection;
+use crate::database::{DatabaseConnection, PostgresConnection};
 use crate::error::{ErrorKind, StdResult};
+use crate::migration::{
+    filter_pending_migrations, DatabaseMigrationManager, Migration, MigrationManager,
+};
 
 const EM_DASH: char = '—';
 
 pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
-    let applied_migrations = match config.database_connection_string() {
+    let applied_migration_names = match config.database_connection_string() {
         Ok(ref database_connection_string) => {
-            let mut connection = PostgresConnection::open(database_connection_string)?;
-            let applied_migrations = connection.applied_migration_names()?;
+            let connection = PostgresConnection::open(database_connection_string)?;
+            let mut manager = MigrationManager::new(connection);
 
-            println!("Applied migrations:");
-            if applied_migrations.is_empty() {
-                println!("{}", EM_DASH);
-            } else {
-                applied_migrations
-                    .iter()
-                    .rev()
-                    .for_each(|name| println!("{}", name));
-            }
+            let applied_migration_names = manager.applied_migration_names()?;
 
-            applied_migrations
+            show_applied_migrations(&applied_migration_names);
+
+            applied_migration_names
         }
         Err(e) if *e.kind() == ErrorKind::MissedEnvVar(String::new()) => {
             println!("{}", e.kind());
@@ -33,11 +30,26 @@ pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
 
     println!();
 
-    let pending_migrations = config
-        .migrations()?
-        .into_iter()
-        .filter(|m| !applied_migrations.contains(m.name()))
-        .collect::<Vec<_>>();
+    let pending_migrations =
+        filter_pending_migrations(config.migrations()?, &applied_migration_names);
+    show_pending_migrations(&pending_migrations);
+
+    Ok(())
+}
+
+fn show_applied_migrations(applied_migration_names: &[String]) {
+    println!("Applied migrations:");
+    if applied_migration_names.is_empty() {
+        println!("{}", EM_DASH);
+    } else {
+        applied_migration_names
+            .iter()
+            .rev()
+            .for_each(|name| println!("{}", name));
+    }
+}
+
+fn show_pending_migrations(pending_migrations: &[Migration]) {
     println!("Pending migrations:");
     if pending_migrations.is_empty() {
         println!("{}", EM_DASH);
@@ -46,6 +58,4 @@ pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
             println!("{}", m.name());
         });
     }
-
-    Ok(())
 }

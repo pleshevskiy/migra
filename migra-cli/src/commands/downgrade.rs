@@ -1,13 +1,14 @@
 use crate::config::Config;
 use crate::database::PostgresConnection;
-use crate::migration::Downgrade;
+use crate::migration::{DatabaseMigrationManager, MigrationManager};
 use crate::StdResult;
 use std::convert::TryFrom;
 
 pub(crate) fn downgrade_applied_migrations(config: Config) -> StdResult<()> {
-    let mut connection = PostgresConnection::try_from(&config)?;
+    let connection = PostgresConnection::try_from(&config)?;
+    let mut manager = MigrationManager::new(connection);
 
-    let applied_migrations = connection.applied_migration_names()?;
+    let applied_migrations = manager.applied_migration_names()?;
     let migrations = config.migrations()?;
 
     if let Some(first_applied_migration) = applied_migrations.first() {
@@ -16,7 +17,7 @@ pub(crate) fn downgrade_applied_migrations(config: Config) -> StdResult<()> {
             .find(|m| m.name() == first_applied_migration)
         {
             println!("downgrade {}...", migration.name());
-            migration.downgrade(&mut connection)?;
+            manager.downgrade(&migration)?;
         }
     }
 
