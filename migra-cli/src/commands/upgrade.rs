@@ -1,6 +1,8 @@
-use crate::database::{DatabaseConnection, PostgresConnection};
-use crate::migration::Migration;
-use crate::migration::{filter_pending_migrations, DatabaseMigrationManager, MigrationManager};
+use crate::database::PostgresConnection;
+use crate::migration::{
+    filter_pending_migrations, DatabaseMigrationManager, Migration, MigrationManager,
+    MigrationNames,
+};
 use crate::Config;
 use crate::StdResult;
 use std::convert::TryFrom;
@@ -25,13 +27,12 @@ fn is_up_to_date_migrations(migrations: &[Migration], applied_migration_names: &
     migrations.is_empty() || migrations.last().map(|m| m.name()) == applied_migration_names.first()
 }
 
-fn upgrade_all_pending_migrations<Conn, ManagerT>(
+fn upgrade_all_pending_migrations<ManagerT>(
     mut manager: ManagerT,
     pending_migrations: &[Migration],
 ) -> StdResult<()>
 where
-    Conn: DatabaseConnection,
-    ManagerT: Sized + DatabaseMigrationManager<Conn>,
+    ManagerT: Sized + DatabaseMigrationManager,
 {
     for migration in pending_migrations.iter() {
         println!("upgrade {}...", migration.name());

@@ -17,6 +17,13 @@ pub trait TryFromSql<QueryResultRow>: Sized {
     fn try_from_sql(row: QueryResultRow) -> StdResult<Self>;
 }
 
+impl TryFromSql<postgres::Row> for String {
+    fn try_from_sql(row: postgres::Row) -> StdResult<Self> {
+        let res: String = row.get(0);
+        Ok(res)
+    }
+}
+
 pub trait DatabaseConnection: Sized {
     type QueryResultRow;
     type QueryResult;

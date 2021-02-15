@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::database::PostgresConnection;
-use crate::migration::{DatabaseMigrationManager, MigrationManager};
+use crate::migration::{DatabaseMigrationManager, MigrationManager, MigrationNames};
 use crate::StdResult;
 use std::convert::TryFrom;
 

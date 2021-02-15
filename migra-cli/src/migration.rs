@@ -1,4 +1,3 @@
-use crate::database::TryFromSql;
 use crate::database::{DatabaseConnection, PostgresConnection};
 use crate::path::PathBuilder;
 use crate::StdResult;
@@ -67,14 +66,7 @@ pub fn is_migrations_table_not_found<D: std::fmt::Display>(error: D) -> bool {
         .contains(r#"relation "migrations" does not exist"#)
 }
 
-impl TryFromSql<postgres::Row> for String {
-    fn try_from_sql(row: postgres::Row) -> StdResult<Self> {
-        let res: String = row.get(0);
-        Ok(res)
-    }
-}
-
-pub trait DatabaseMigrationManager<Conn: DatabaseConnection> {
+pub trait DatabaseMigrationManager {
     const CREATE_MIGRATIONS_STMT: &'static str = r#"
         CREATE TABLE IF NOT EXISTS migrations (
             id      serial      PRIMARY KEY,
@@ -87,8 +79,6 @@ pub trait DatabaseMigrationManager<Conn: DatabaseConnection> {
     const DELETE_MIGRATION_STMT: &'static str = "DELETE FROM migrations WHERE name = $1";
 
     fn apply_sql(&mut self, sql_content: &str) -> StdResult<()>;
-
-    fn applied_migration_names(&mut self) -> StdResult<Vec<String>>;
 
     fn create_migrations_table(&mut self) -> StdResult<()>;
 
@@ -116,24 +106,12 @@ pub trait DatabaseMigrationManager<Conn: DatabaseConnection> {
     }
 }
 
-impl DatabaseMigrationManager<PostgresConnection> for MigrationManager<PostgresConnection> {
+impl<Conn> DatabaseMigrationManager for MigrationManager<Conn>
+where
+    Conn: DatabaseConnection,
+{
     fn apply_sql(&mut self, sql_content: &str) -> StdResult<()> {
         self.conn.batch_execute(sql_content)
-    }
-
-    fn applied_migration_names(&mut self) -> StdResult<Vec<String>> {
-        let res = self
-            .conn
-            .query("SELECT name FROM migrations ORDER BY id DESC", &[])
-            .or_else(|e| {
-                if is_migrations_table_not_found(&e) {
-                    Ok(Vec::new())
-                } else {
-                    Err(e)
-                }
-            })?;
-
-        Ok(res.into_iter().collect())
     }
 
     fn create_migrations_table(&mut self) -> StdResult<()> {
@@ -146,6 +124,29 @@ impl DatabaseMigrationManager<PostgresConnection> for MigrationManager<PostgresC
 
     fn delete_migration_info(&mut self, name: &str) -> StdResult<u64> {
         self.conn.execute(Self::DELETE_MIGRATION_STMT, &[&name])
+    }
+}
+
+pub trait MigrationNames {
+    const APPLIED_MIGRATIONS_STMT: &'static str = "SELECT name FROM migrations ORDER BY id DESC";
+
+    fn applied_migration_names(&mut self) -> StdResult<Vec<String>>;
+}
+
+impl MigrationNames for MigrationManager<PostgresConnection> {
+    fn applied_migration_names(&mut self) -> StdResult<Vec<String>> {
+        let res = self
+            .conn
+            .query(Self::APPLIED_MIGRATIONS_STMT, &[])
+            .or_else(|e| {
+                if is_migrations_table_not_found(&e) {
+                    Ok(Vec::new())
+                } else {
+                    Err(e)
+                }
+            })?;
+
+        Ok(res.into_iter().collect())
     }
 }
 
