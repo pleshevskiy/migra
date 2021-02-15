@@ -108,16 +108,18 @@ where
             r#"CREATE TABLE IF NOT EXISTS migrations (
                 id      serial      PRIMARY KEY,
                 name    text        NOT NULL UNIQUE
-            )"#
+            )"#,
         )
     }
 
     fn insert_migration_info(&mut self, name: &str) -> StdResult<u64> {
-        self.conn.execute("INSERT INTO migrations (name) VALUES ($1)", &[&name])
+        self.conn
+            .execute("INSERT INTO migrations (name) VALUES ($1)", &[&name])
     }
 
     fn delete_migration_info(&mut self, name: &str) -> StdResult<u64> {
-        self.conn.execute("DELETE FROM migrations WHERE name = $1", &[&name])
+        self.conn
+            .execute("DELETE FROM migrations WHERE name = $1", &[&name])
     }
 }
 

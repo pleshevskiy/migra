@@ -1,10 +1,7 @@
 use crate::config::Config;
 use crate::database::{DatabaseConnection, PostgresConnection};
 use crate::error::{ErrorKind, StdResult};
-use crate::migration::{
-    filter_pending_migrations, DatabaseMigrationManager, Migration, MigrationManager,
-    MigrationNames,
-};
+use crate::migration::{filter_pending_migrations, Migration, MigrationManager, MigrationNames};
 
 const EM_DASH: char = '—';
 
