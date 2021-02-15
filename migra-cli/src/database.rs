@@ -9,7 +9,7 @@ pub trait ToSql {
 
 impl ToSql for &str {
     fn to_sql(&self) -> String {
-        format!(r#""{}""#, self)
+        format!("'{}'", self)
     }
 }
 

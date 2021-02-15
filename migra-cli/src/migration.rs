@@ -67,17 +67,6 @@ pub fn is_migrations_table_not_found<D: std::fmt::Display>(error: D) -> bool {
 }
 
 pub trait DatabaseMigrationManager {
-    const CREATE_MIGRATIONS_STMT: &'static str = r#"
-        CREATE TABLE IF NOT EXISTS migrations (
-            id      serial      PRIMARY KEY,
-            name    text        NOT NULL UNIQUE
-        )
-    "#;
-
-    const INSERT_MIGRATION_STMT: &'static str = "INSERT INTO migrations (name) VALUES ($1)";
-
-    const DELETE_MIGRATION_STMT: &'static str = "DELETE FROM migrations WHERE name = $1";
-
     fn apply_sql(&mut self, sql_content: &str) -> StdResult<()>;
 
     fn create_migrations_table(&mut self) -> StdResult<()>;
@@ -115,15 +104,20 @@ where
     }
 
     fn create_migrations_table(&mut self) -> StdResult<()> {
-        self.conn.batch_execute(Self::CREATE_MIGRATIONS_STMT)
+        self.conn.batch_execute(
+            r#"CREATE TABLE IF NOT EXISTS migrations (
+                id      serial      PRIMARY KEY,
+                name    text        NOT NULL UNIQUE
+            )"#
+        )
     }
 
     fn insert_migration_info(&mut self, name: &str) -> StdResult<u64> {
-        self.conn.execute(Self::INSERT_MIGRATION_STMT, &[&name])
+        self.conn.execute("INSERT INTO migrations (name) VALUES ($1)", &[&name])
     }
 
     fn delete_migration_info(&mut self, name: &str) -> StdResult<u64> {
-        self.conn.execute(Self::DELETE_MIGRATION_STMT, &[&name])
+        self.conn.execute("DELETE FROM migrations WHERE name = $1", &[&name])
     }
 }
 
