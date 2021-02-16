@@ -1,4 +1,4 @@
-use crate::database::{DatabaseConnection, PostgresConnection};
+use crate::database::DatabaseConnection;
 use crate::path::PathBuilder;
 use crate::StdResult;
 use std::fs;
@@ -51,7 +51,7 @@ impl Migration {
 }
 
 pub struct MigrationManager<Conn: DatabaseConnection> {
-    conn: Conn,
+    pub(crate) conn: Conn,
 }
 
 impl<Conn: DatabaseConnection> MigrationManager<Conn> {
@@ -127,23 +127,6 @@ pub trait MigrationNames {
     const APPLIED_MIGRATIONS_STMT: &'static str = "SELECT name FROM migrations ORDER BY id DESC";
 
     fn applied_migration_names(&mut self) -> StdResult<Vec<String>>;
-}
-
-impl MigrationNames for MigrationManager<PostgresConnection> {
-    fn applied_migration_names(&mut self) -> StdResult<Vec<String>> {
-        let res = self
-            .conn
-            .query(Self::APPLIED_MIGRATIONS_STMT, &[])
-            .or_else(|e| {
-                if is_migrations_table_not_found(&e) {
-                    Ok(Vec::new())
-                } else {
-                    Err(e)
-                }
-            })?;
-
-        Ok(res.into_iter().collect())
-    }
 }
 
 pub fn filter_pending_migrations(

@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::database::PostgresConnection;
+use crate::databases::*;
 use crate::migration::{DatabaseMigrationManager, MigrationManager};
 use crate::opts::ApplyCommandOpt;
 use crate::path::PathBuilder;

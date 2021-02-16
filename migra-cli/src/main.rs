@@ -3,6 +3,7 @@
 mod commands;
 mod config;
 mod database;
+mod databases;
 mod error;
 mod migration;
 mod opts;

@@ -1,5 +1,6 @@
 use crate::config::Config;
-use crate::database::{DatabaseConnection, PostgresConnection};
+use crate::database::DatabaseConnection;
+use crate::databases::*;
 use crate::error::{ErrorKind, StdResult};
 use crate::migration::{filter_pending_migrations, Migration, MigrationManager, MigrationNames};
 

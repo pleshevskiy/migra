@@ -1,4 +1,4 @@
-use crate::database::PostgresConnection;
+use crate::databases::*;
 use crate::migration::{
     filter_pending_migrations, DatabaseMigrationManager, Migration, MigrationManager,
     MigrationNames,
