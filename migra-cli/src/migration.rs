@@ -1,6 +1,9 @@
+use crate::config::Config;
 use crate::database::DatabaseConnection;
+use crate::databases::DatabaseConnectionManager;
 use crate::path::PathBuilder;
 use crate::StdResult;
+use std::convert::TryFrom;
 use std::fs;
 use std::path::PathBuf;
 
@@ -50,13 +53,23 @@ impl Migration {
     }
 }
 
-pub struct MigrationManager<Conn: DatabaseConnection> {
-    pub(crate) conn: Conn,
+pub struct MigrationManager {
+    pub(crate) conn: Box<dyn DatabaseConnection>,
 }
 
-impl<Conn: DatabaseConnection> MigrationManager<Conn> {
-    pub fn new(conn: Conn) -> Self {
+impl MigrationManager {
+    pub fn new(conn: Box<dyn DatabaseConnection>) -> Self {
         MigrationManager { conn }
+    }
+}
+
+impl TryFrom<&Config> for MigrationManager {
+    type Error = Box<dyn std::error::Error>;
+
+    fn try_from(config: &Config) -> Result<Self, Self::Error> {
+        let connection_manager = DatabaseConnectionManager::new(&config.database);
+        let conn = connection_manager.connect()?;
+        Ok(Self { conn })
     }
 }
 
@@ -74,6 +87,8 @@ pub trait DatabaseMigrationManager {
     fn insert_migration_info(&mut self, name: &str) -> StdResult<u64>;
 
     fn delete_migration_info(&mut self, name: &str) -> StdResult<u64>;
+
+    fn applied_migration_names(&mut self) -> StdResult<Vec<String>>;
 
     fn upgrade(&mut self, migration: &Migration) -> StdResult<()> {
         let content = migration.upgrade_sql_content()?;
@@ -95,10 +110,7 @@ pub trait DatabaseMigrationManager {
     }
 }
 
-impl<Conn> DatabaseMigrationManager for MigrationManager<Conn>
-where
-    Conn: DatabaseConnection,
-{
+impl DatabaseMigrationManager for MigrationManager {
     fn apply_sql(&mut self, sql_content: &str) -> StdResult<()> {
         self.conn.batch_execute(sql_content)
     }
@@ -121,12 +133,22 @@ where
         self.conn
             .execute("DELETE FROM migrations WHERE name = $1", &[&name])
     }
-}
 
-pub trait MigrationNames {
-    const APPLIED_MIGRATIONS_STMT: &'static str = "SELECT name FROM migrations ORDER BY id DESC";
+    fn applied_migration_names(&mut self) -> StdResult<Vec<String>> {
+        let res = self
+            .conn
+            .query("SELECT name FROM migrations ORDER BY id DESC", &[])
+            .map(|row| row.first().unwrap().clone())
+            .or_else(|e| {
+                if is_migrations_table_not_found(&e) {
+                    Ok(Vec::new())
+                } else {
+                    Err(e)
+                }
+            })?;
 
-    fn applied_migration_names(&mut self) -> StdResult<Vec<String>>;
+        Ok(res.into_iter().collect())
+    }
 }
 
 pub fn filter_pending_migrations(

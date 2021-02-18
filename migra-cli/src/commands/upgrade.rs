@@ -1,14 +1,12 @@
-use crate::databases::*;
 use crate::migration::{
     filter_pending_migrations, DatabaseMigrationManager, Migration, MigrationManager,
-    MigrationNames,
 };
 use crate::Config;
 use crate::StdResult;
 use std::convert::TryFrom;
 
 pub(crate) fn upgrade_pending_migrations(config: Config) -> StdResult<()> {
-    let mut manager = MigrationManager::new(PostgresConnection::try_from(&config)?);
+    let mut manager = MigrationManager::try_from(&config)?;
 
     let applied_migration_names = manager.applied_migration_names()?;
     let migrations = config.migrations()?;

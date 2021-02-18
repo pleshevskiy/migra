@@ -14,21 +14,18 @@ pub trait TryFromSql<QueryResultRow>: Sized {
     fn try_from_sql(row: QueryResultRow) -> StdResult<Self>;
 }
 
-pub trait DatabaseConnection: Sized {
-    type QueryResultRow;
-    type QueryResult;
-
+pub trait OpenDatabaseConnection: Sized {
     fn open(connection_string: &str) -> StdResult<Self>;
+}
 
+pub trait DatabaseConnection {
     fn batch_execute(&mut self, query: &str) -> StdResult<()>;
 
     fn execute<'b>(&mut self, query: &str, params: &'b [&'b dyn ToSql]) -> StdResult<u64>;
 
-    fn query<'b, OutputItem>(
+    fn query<'b>(
         &mut self,
         query: &str,
         params: &'b [&'b dyn ToSql],
-    ) -> StdResult<Vec<OutputItem>>
-    where
-        OutputItem: ?Sized + TryFromSql<Self::QueryResultRow>;
+    ) -> StdResult<Vec<Vec<String>>>;
 }

@@ -16,21 +16,47 @@ pub(crate) struct Config {
     root: PathBuf,
 
     #[serde(default)]
-    database: DatabaseConfig,
+    pub database: DatabaseConfig,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) enum SupportedDatabaseClient {
+    Postgres,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub(crate) struct DatabaseConfig {
+    pub client: Option<SupportedDatabaseClient>,
     pub connection: Option<String>,
+}
+
+impl DatabaseConfig {
+    pub fn client(&self) -> crate::error::Result<SupportedDatabaseClient> {
+        Ok(SupportedDatabaseClient::Postgres)
+    }
+
+    pub fn connection_string(&self) -> crate::error::Result<String> {
+        let connection = self
+            .connection
+            .clone()
+            .unwrap_or_else(|| String::from(DEFAULT_DATABASE_CONNECTION_ENV));
+        if let Some(connection_env) = connection.strip_prefix("$") {
+            env::var(connection_env)
+                .map_err(|e| Error::new(ErrorKind::MissedEnvVar(connection_env.to_string()), e))
+        } else {
+            Ok(connection)
+        }
+    }
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
-            manifest_root: PathBuf::new(),
+            manifest_root: PathBuf::default(),
             root: PathBuf::from("database"),
             database: DatabaseConfig {
                 connection: Some(String::from(DEFAULT_DATABASE_CONNECTION_ENV)),
+                ..Default::default()
             },
         }
     }
@@ -89,20 +115,6 @@ impl Config {
         PathBuilder::from(&self.manifest_root)
             .append(&self.root)
             .build()
-    }
-
-    pub fn database_connection_string(&self) -> crate::error::Result<String> {
-        let connection = self
-            .database
-            .connection
-            .clone()
-            .unwrap_or_else(|| String::from(DEFAULT_DATABASE_CONNECTION_ENV));
-        if let Some(connection_env) = connection.strip_prefix("$") {
-            env::var(connection_env)
-                .map_err(|e| Error::new(ErrorKind::MissedEnvVar(connection_env.to_string()), e))
-        } else {
-            Ok(connection)
-        }
     }
 
     pub fn migration_dir_path(&self) -> PathBuf {

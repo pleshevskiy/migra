@@ -1,16 +1,18 @@
 use crate::config::Config;
-use crate::database::DatabaseConnection;
 use crate::databases::*;
 use crate::error::{ErrorKind, StdResult};
-use crate::migration::{filter_pending_migrations, Migration, MigrationManager, MigrationNames};
+use crate::migration::{
+    filter_pending_migrations, DatabaseMigrationManager, Migration, MigrationManager,
+};
 
 const EM_DASH: char = '—';
 
 pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
-    let applied_migration_names = match config.database_connection_string() {
+    let applied_migration_names = match config.database.connection_string() {
         Ok(ref database_connection_string) => {
-            let connection = PostgresConnection::open(database_connection_string)?;
-            let mut manager = MigrationManager::new(connection);
+            let connection_manager = DatabaseConnectionManager::new(&config.database);
+            let conn = connection_manager.connect_with_string(database_connection_string)?;
+            let mut manager = MigrationManager::new(conn);
 
             let applied_migration_names = manager.applied_migration_names()?;
 
