@@ -17,7 +17,10 @@ impl DatabaseConnectionManager {
         }
     }
 
-    pub fn connect_with_string(&self, connection_string: &str) -> StdResult<Box<dyn DatabaseConnection>> {
+    pub fn connect_with_string(
+        &self,
+        connection_string: &str,
+    ) -> StdResult<Box<dyn DatabaseConnection>> {
         let conn = match self.config.client()? {
             SupportedDatabaseClient::Postgres => PostgresConnection::open(&connection_string)?,
         };

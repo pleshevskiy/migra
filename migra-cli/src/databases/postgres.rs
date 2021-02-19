@@ -1,4 +1,4 @@
-use crate::database::{DatabaseConnection, OpenDatabaseConnection, ToSql};
+use crate::database::*;
 use crate::error::StdResult;
 use postgres::{Client, NoTls};
 
@@ -19,29 +19,15 @@ impl DatabaseConnection for PostgresConnection {
         Ok(())
     }
 
-    fn execute<'b>(&mut self, query: &str, params: &'b [&'b dyn ToSql]) -> StdResult<u64> {
-        let stmt = params
-            .iter()
-            .enumerate()
-            .fold(query.to_string(), |acc, (i, p)| {
-                str::replace(&acc, &format!("${}", i), &p.to_sql())
-            });
+    fn execute<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<u64> {
+        let stmt = merge_query_with_params(query, params);
 
         let res = self.client.execute(stmt.as_str(), &[])?;
         Ok(res)
     }
 
-    fn query<'b>(
-        &mut self,
-        query: &str,
-        params: &'b [&'b dyn ToSql],
-    ) -> StdResult<Vec<Vec<String>>> {
-        let stmt = params
-            .iter()
-            .enumerate()
-            .fold(query.to_string(), |acc, (i, p)| {
-                str::replace(&acc, &format!("${}", i), &p.to_sql())
-            });
+    fn query<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<Vec<Vec<String>>> {
+        let stmt = merge_query_with_params(query, params);
 
         let res = self.client.query(stmt.as_str(), &[])?;
 
