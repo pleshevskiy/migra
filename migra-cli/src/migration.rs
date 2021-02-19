@@ -138,7 +138,6 @@ impl DatabaseMigrationManager for MigrationManager {
         let res = self
             .conn
             .query("SELECT name FROM migrations ORDER BY id DESC", &[])
-            .map(|row| row.first().unwrap().clone())
             .or_else(|e| {
                 if is_migrations_table_not_found(&e) {
                     Ok(Vec::new())
@@ -147,7 +146,12 @@ impl DatabaseMigrationManager for MigrationManager {
                 }
             })?;
 
-        Ok(res.into_iter().collect())
+        let applied_migration_names: Vec<String> = res
+            .into_iter()
+            .filter_map(|row| row.first().cloned())
+            .collect();
+
+        Ok(applied_migration_names)
     }
 }
 
