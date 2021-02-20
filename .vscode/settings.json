@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
         "migra"
-    ]
+    ],
+    "editor.formatOnSave": true
 }
