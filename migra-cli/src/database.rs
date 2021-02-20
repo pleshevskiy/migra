@@ -42,17 +42,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn merge_query_with_params_successfully() {
+    fn replace_one_param_in_query() {
         assert_eq!(
             merge_query_with_params("SELECT $1", &[&"foo"]),
             "SELECT 'foo'"
         );
+    }
 
+    #[test]
+    fn replace_two_params_in_query() {
         assert_eq!(
             merge_query_with_params("SELECT $1, $2", &[&"foo", &"bar"]),
             "SELECT 'foo', 'bar'"
         );
+    }
 
+    #[test]
+    fn replace_all_bonds_in_query_with_first_param() {
         assert_eq!(
             merge_query_with_params("SELECT $1, $1", &[&"foo"]),
             "SELECT 'foo', 'foo'"
