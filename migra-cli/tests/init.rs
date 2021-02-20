@@ -18,7 +18,8 @@ fn init_manifest_with_default_config() -> TestResult {
 
 [database]
 connection = "$DATABASE_URL"
-"#);
+"#
+    );
 
     fs::remove_file("Migra.toml")?;
 
@@ -45,7 +46,8 @@ fn init_manifest_in_custom_path() -> TestResult {
 
 [database]
 connection = "$DATABASE_URL"
-"#);
+"#
+    );
 
     fs::remove_file(&manifest_path)?;
 
