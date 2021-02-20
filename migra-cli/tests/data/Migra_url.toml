@@ -1,0 +1,4 @@
+root = "./"
+
+[database]
+connection = "postgres://postgres:postgres@localhost:6000/migra_tests"

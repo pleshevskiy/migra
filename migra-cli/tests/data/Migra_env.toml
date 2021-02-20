@@ -1,0 +1,4 @@
+root = "./"
+
+[database]
+connection = "$DATABASE_URL"
