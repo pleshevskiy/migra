@@ -1,7 +1,6 @@
 mod common;
 
 use common::*;
-use std::io::Write;
 
 #[test]
 fn empty_migration_list() -> TestResult {

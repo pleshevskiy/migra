@@ -34,8 +34,8 @@ impl PathBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::path::Path;
-    use crate::path::PathBuilder;
+    use super::Path;
+    use super::PathBuilder;
 
     #[test]
     fn create_path_builder() {
