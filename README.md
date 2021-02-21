@@ -6,7 +6,6 @@
 
 Simple SQL migration manager for your project.
 
-
 ### Install
 
 ```bash
@@ -36,3 +35,7 @@ A few steps to get you started
     ```
 
 For more information about the commands, simply run `migra help`
+
+### Supported databases
+
+- [x] Postgres
