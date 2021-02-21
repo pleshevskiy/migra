@@ -41,5 +41,10 @@ pub(crate) fn make_migration(config: Config, opts: MakeCommandOpt) -> StdResult<
         )?;
     }
 
+    println!(
+        "Structure for migration has been created in the {}",
+        migration_dir_path.to_str().unwrap()
+    );
+
     Ok(())
 }
