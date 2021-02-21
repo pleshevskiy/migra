@@ -5,7 +5,7 @@ use crate::path::PathBuilder;
 use crate::StdResult;
 use std::convert::TryFrom;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct Migration {
@@ -15,7 +15,7 @@ pub struct Migration {
 }
 
 impl Migration {
-    pub(crate) fn new(directory: &PathBuf) -> Option<Migration> {
+    pub(crate) fn new(directory: &Path) -> Option<Migration> {
         if directory.is_dir() {
             let name = directory
                 .file_name()

@@ -26,7 +26,7 @@ pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
 
             Vec::new()
         }
-        Err(e) => panic!(e),
+        Err(e) => panic!("{}", e),
     };
 
     println!();

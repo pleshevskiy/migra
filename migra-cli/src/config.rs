@@ -139,7 +139,7 @@ impl Config {
 
         let migrations = entries
             .iter()
-            .filter_map(Migration::new)
+            .filter_map(|path| Migration::new(&path))
             .collect::<Vec<_>>();
 
         Ok(migrations)
