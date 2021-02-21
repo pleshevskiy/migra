@@ -337,3 +337,47 @@ mod make {
         Ok(())
     }
 }
+
+mod upgrade {
+    use super::*;
+
+    #[test]
+    fn applied_all_migrations() -> TestResult {
+        let env = Env::new(DATABASE_URL_DEFAULT_ENV_NAME, DATABASE_URL_ENV_VALUE);
+
+        Command::cargo_bin("migra")?
+            .arg("-c")
+            .arg(path_to_file("Migra_env.toml"))
+            .arg("up")
+            .assert()
+            .success();
+
+        let mut conn = postgres::Client::connect(DATABASE_URL_ENV_VALUE, postgres::NoTls)?;
+        let res = conn.query("SELECT p.id, a.id FROM persons AS p, articles AS a", &[])?;
+
+        assert_eq!(
+            res.into_iter()
+                .map(|row| (row.get(0), row.get(1)))
+                .collect::<Vec<(i32, i32)>>(),
+            Vec::new()
+        );
+
+        Command::cargo_bin("migra")?
+            .arg("-c")
+            .arg(path_to_file("Migra_env.toml"))
+            .arg("down")
+            .assert()
+            .success();
+
+        Command::cargo_bin("migra")?
+            .arg("-c")
+            .arg(path_to_file("Migra_env.toml"))
+            .arg("down")
+            .assert()
+            .success();
+
+        drop(env);
+
+        Ok(())
+    }
+}
