@@ -16,6 +16,10 @@ readme = "../README.md"
 name = "migra"
 path = "src/main.rs"
 
+[[test]]
+name = "integration"
+path = "tests/commands.rs"
+
 [dependencies]
 structopt = "0.3"
 serde = { version = "1.0", features = ["derive"] }
