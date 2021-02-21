@@ -287,3 +287,53 @@ Pending migrations:
         Ok(())
     }
 }
+
+mod make {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn make_migration_directory() -> TestResult {
+        Command::cargo_bin("migra")?
+            .arg("-c")
+            .arg(path_to_file("Migra_url.toml"))
+            .arg("make")
+            .arg("test")
+            .assert()
+            .success()
+            .stdout(contains("Structure for migration has been created in"));
+
+        let entries = fs::read_dir(path_to_file("migrations"))?
+            .map(|entry| entry.map(|e| e.path()))
+            .collect::<Result<Vec<_>, std::io::Error>>()?;
+
+        let dir_paths = entries
+            .iter()
+            .filter_map(|path| {
+                path.to_str().and_then(|path| {
+                    if path.ends_with("_test") {
+                        Some(path)
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+
+        for dir_path in dir_paths.iter() {
+            let upgrade_content = fs::read_to_string(format!("{}/up.sql", dir_path))?;
+            let downgrade_content = fs::read_to_string(format!("{}/down.sql", dir_path))?;
+
+            assert_eq!(upgrade_content, "-- Your SQL goes here\n\n");
+
+            assert_eq!(
+                downgrade_content,
+                "-- This file should undo anything in `up.sql`\n\n"
+            );
+
+            fs::remove_dir_all(dir_path)?;
+        }
+
+        Ok(())
+    }
+}
