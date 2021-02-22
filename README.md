@@ -9,7 +9,7 @@ Simple SQL migration manager for your project.
 ### Install
 
 ```bash
-cargo install migra
+cargo install migra-cli
 ```
 
 
