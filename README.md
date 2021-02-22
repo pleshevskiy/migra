@@ -45,7 +45,7 @@ For more information about the commands, simply run `migra help`
 
 Licensed under either of these:
 
- * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+ * Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE_APACHE) or
    https://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or
+ * MIT license ([LICENSE-MIT](LICENSE_MIT) or
    https://opensource.org/licenses/MIT)
