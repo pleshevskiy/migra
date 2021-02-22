@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/pleshevskiy/migra/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/pleshevskiy/migra/actions/workflows/rust.yml)
 [![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
-[![Crates.io](https://img.shields.io/badge/crates.io-v0.1.3-blue.svg?longCache=true)](https://crates.io/crates/migra-cli)
+[![Crates.io](https://img.shields.io/badge/crates.io-v0.1.4-blue.svg?longCache=true)](https://crates.io/crates/migra-cli)
 
 Simple SQL migration manager for your project.
 
