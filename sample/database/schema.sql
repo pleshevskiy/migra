@@ -1,6 +1,6 @@
 
-create table tags (
-    id          serial          primary key,
-    name        text            not null unique check(length(name) > 0),
-    created_at  timestamp       not null default current_timestamp
+CREATE TABLE tags (
+    id          serial          PRIMARY KEY,
+    name        text            NOT NULL UNIQUE CHECK(length(name) > 0),
+    created_at  timestamp       NOT NULL DEFAULT current_timestamp
 );
