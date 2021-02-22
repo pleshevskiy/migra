@@ -1,4 +1,4 @@
-use crate::error::{Error, ErrorKind};
+use crate::error::{Error, MigraResult};
 use crate::migration::Migration;
 use crate::path::PathBuilder;
 use serde::{Deserialize, Serialize};
@@ -31,18 +31,17 @@ pub(crate) struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-    pub fn client(&self) -> crate::error::Result<SupportedDatabaseClient> {
+    pub fn client(&self) -> MigraResult<SupportedDatabaseClient> {
         Ok(SupportedDatabaseClient::Postgres)
     }
 
-    pub fn connection_string(&self) -> crate::error::Result<String> {
+    pub fn connection_string(&self) -> MigraResult<String> {
         let connection = self
             .connection
             .clone()
             .unwrap_or_else(|| String::from(DEFAULT_DATABASE_CONNECTION_ENV));
         if let Some(connection_env) = connection.strip_prefix("$") {
-            env::var(connection_env)
-                .map_err(|e| Error::new(ErrorKind::MissedEnvVar(connection_env.to_string()), e))
+            env::var(connection_env).map_err(|_| Error::MissedEnvVar(connection_env.to_string()))
         } else {
             Ok(connection)
         }
@@ -62,35 +61,32 @@ impl Default for Config {
     }
 }
 
-fn recursive_find_config_file() -> io::Result<PathBuf> {
-    let current_dir = std::env::current_dir()?;
-
-    let mut read_dir = Some(current_dir.as_path());
-
-    loop {
-        if let Some(dir) = read_dir {
-            let migra_file_path = PathBuilder::from(dir).append(MIGRA_TOML_FILENAME).build();
-            if !migra_file_path.exists() {
-                read_dir = dir.parent();
-                continue;
-            }
-
-            return Ok(migra_file_path);
-        } else {
-            return Err(io::Error::from(io::ErrorKind::NotFound));
-        }
+fn search_for_directory_containing_file(path: &Path, file_name: &str) -> MigraResult<PathBuf> {
+    let file_path = path.join(file_name);
+    if file_path.is_file() {
+        Ok(path.to_owned())
+    } else {
+        path.parent()
+            .ok_or(Error::RootNotFound)
+            .and_then(|p| search_for_directory_containing_file(p, file_name))
     }
 }
 
+fn recursive_find_project_root() -> MigraResult<PathBuf> {
+    let current_dir = std::env::current_dir()?;
+
+    search_for_directory_containing_file(&current_dir, MIGRA_TOML_FILENAME)
+}
+
 impl Config {
-    pub fn read(config_path: Option<PathBuf>) -> io::Result<Config> {
+    pub fn read(config_path: Option<PathBuf>) -> MigraResult<Config> {
         let config_path = match config_path {
             Some(mut config_path) if config_path.is_dir() => {
                 config_path.push(MIGRA_TOML_FILENAME);
                 Some(config_path)
             }
             Some(config_path) => Some(config_path),
-            None => recursive_find_config_file().ok(),
+            None => recursive_find_project_root().ok(),
         };
 
         match config_path {
@@ -123,7 +119,7 @@ impl Config {
             .build()
     }
 
-    pub fn migrations(&self) -> io::Result<Vec<Migration>> {
+    pub fn migrations(&self) -> MigraResult<Vec<Migration>> {
         let mut entries = match self.migration_dir_path().read_dir() {
             Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             entries => entries?

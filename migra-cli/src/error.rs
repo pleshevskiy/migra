@@ -1,102 +1,43 @@
-use std::error::Error as StdError;
+use std::error;
 use std::fmt;
+use std::io;
 use std::mem;
 use std::result;
 
 pub type StdResult<T> = result::Result<T, Box<dyn std::error::Error>>;
-pub type Result<T> = result::Result<T, Error>;
+pub type MigraResult<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
-pub struct Error {
-    repr: Repr,
-}
-
-enum Repr {
-    Simple(ErrorKind),
-    Custom(Box<Custom>),
-}
-
-#[derive(Debug)]
-struct Custom {
-    kind: ErrorKind,
-    error: Box<dyn StdError + Send + Sync>,
-}
-
-#[derive(Debug, Clone)]
-pub enum ErrorKind {
+pub enum Error {
+    RootNotFound,
     MissedEnvVar(String),
+
+    IoError(io::Error),
 }
 
-impl fmt::Display for ErrorKind {
+impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            ErrorKind::MissedEnvVar(ref name) => {
+            Error::RootNotFound => fmt.write_str("Cannot find root directory"),
+            Error::MissedEnvVar(ref name) => {
                 write!(fmt, r#"Missed "{}" environment variable"#, name)
             }
+            Error::IoError(ref error) => write!(fmt, "{}", error),
         }
     }
 }
 
-impl PartialEq for ErrorKind {
+impl error::Error for Error {}
+
+impl PartialEq for Error {
     fn eq(&self, other: &Self) -> bool {
         mem::discriminant(self) == mem::discriminant(other)
     }
 }
 
-impl From<ErrorKind> for Error {
+impl From<io::Error> for Error {
     #[inline]
-    fn from(kind: ErrorKind) -> Error {
-        Error {
-            repr: Repr::Simple(kind),
-        }
-    }
-}
-
-impl Error {
-    pub fn new<E>(kind: ErrorKind, error: E) -> Error
-    where
-        E: Into<Box<dyn StdError + Send + Sync>>,
-    {
-        Self::_new(kind, error.into())
-    }
-
-    fn _new(kind: ErrorKind, error: Box<dyn StdError + Send + Sync>) -> Error {
-        Error {
-            repr: Repr::Custom(Box::new(Custom { kind, error })),
-        }
-    }
-
-    pub fn kind(&self) -> &ErrorKind {
-        match &self.repr {
-            Repr::Custom(ref c) => &c.kind,
-            Repr::Simple(kind) => &kind,
-        }
-    }
-}
-
-impl fmt::Debug for Repr {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Repr::Custom(ref c) => fmt::Debug::fmt(&c, fmt),
-            Repr::Simple(kind) => fmt.debug_tuple("Kind").field(&kind).finish(),
-        }
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.repr {
-            Repr::Custom(ref c) => c.error.fmt(fmt),
-            Repr::Simple(kind) => write!(fmt, "{}", kind),
-        }
-    }
-}
-
-impl StdError for Error {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        match self.repr {
-            Repr::Simple(..) => None,
-            Repr::Custom(ref c) => c.error.source(),
-        }
+    fn from(err: io::Error) -> Error {
+        Error::IoError(err)
     }
 }

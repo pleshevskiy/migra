@@ -98,10 +98,12 @@ mod list {
             .arg("ls")
             .assert()
             .success()
+            .stderr(contains(
+                r#"WARNING: Missed "DATABASE_URL" environment variable
+WARNING: No connection to database"#,
+            ))
             .stdout(contains(
-                r#"Missed "DATABASE_URL" environment variable
-No connection to database
-
+                r#"
 Pending migrations:
 —"#,
             ));

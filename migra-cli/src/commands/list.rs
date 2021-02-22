@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::databases::*;
-use crate::error::{ErrorKind, StdResult};
+use crate::error::{Error, StdResult};
 use crate::migration::{
     filter_pending_migrations, DatabaseMigrationManager, Migration, MigrationManager,
 };
@@ -20,9 +20,9 @@ pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
 
             applied_migration_names
         }
-        Err(e) if *e.kind() == ErrorKind::MissedEnvVar(String::new()) => {
-            println!("{}", e.kind());
-            println!("No connection to database");
+        Err(e) if e == Error::MissedEnvVar(String::new()) => {
+            eprintln!("WARNING: {}", e);
+            eprintln!("WARNING: No connection to database");
 
             Vec::new()
         }
