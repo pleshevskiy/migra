@@ -1,7 +1,6 @@
 use crate::config::Config;
 use crate::database::DatabaseConnection;
 use crate::databases::DatabaseConnectionManager;
-use crate::path::PathBuilder;
 use crate::StdResult;
 use std::convert::TryFrom;
 use std::fs;
@@ -21,8 +20,8 @@ impl Migration {
                 .file_name()
                 .and_then(|name| name.to_str())
                 .unwrap_or_default();
-            let upgrade_sql = PathBuilder::from(directory).append("up.sql").build();
-            let downgrade_sql = PathBuilder::from(directory).append("down.sql").build();
+            let upgrade_sql = directory.join("up.sql");
+            let downgrade_sql = directory.join("down.sql");
 
             if upgrade_sql.exists() && downgrade_sql.exists() {
                 return Some(Migration {

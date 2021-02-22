@@ -8,7 +8,6 @@ mod databases;
 mod error;
 mod migration;
 mod opts;
-mod path;
 
 use crate::error::StdResult;
 use config::Config;

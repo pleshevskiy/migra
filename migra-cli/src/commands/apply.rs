@@ -1,17 +1,19 @@
 use crate::config::Config;
 use crate::migration::{DatabaseMigrationManager, MigrationManager};
 use crate::opts::ApplyCommandOpt;
-use crate::path::PathBuilder;
 use crate::StdResult;
 use std::convert::TryFrom;
 
 pub(crate) fn apply_sql(config: Config, opts: ApplyCommandOpt) -> StdResult<()> {
     let mut manager = MigrationManager::try_from(&config)?;
 
-    let file_path = PathBuilder::from(config.directory_path())
-        .append(opts.file_name)
-        .default_extension("sql")
-        .build();
+    let file_path = {
+        let mut file_path = config.directory_path().join(opts.file_name);
+        if file_path.extension().is_none() {
+            file_path.set_extension("sql");
+        }
+        file_path
+    };
 
     let content = std::fs::read_to_string(file_path)?;
 

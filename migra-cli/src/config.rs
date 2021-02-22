@@ -1,6 +1,5 @@
 use crate::error::{Error, MigraResult};
 use crate::migration::Migration;
-use crate::path::PathBuilder;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
@@ -108,15 +107,11 @@ impl Config {
 
 impl Config {
     pub fn directory_path(&self) -> PathBuf {
-        PathBuilder::from(&self.manifest_root)
-            .append(&self.root)
-            .build()
+        self.manifest_root.join(&self.root)
     }
 
     pub fn migration_dir_path(&self) -> PathBuf {
-        PathBuilder::from(&self.directory_path())
-            .append("migrations")
-            .build()
+        self.directory_path().join("migrations")
     }
 
     pub fn migrations(&self) -> MigraResult<Vec<Migration>> {

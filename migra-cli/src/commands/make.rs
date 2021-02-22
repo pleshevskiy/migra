@@ -1,8 +1,8 @@
 use crate::opts::MakeCommandOpt;
-use crate::path::PathBuilder;
 use crate::Config;
 use crate::StdResult;
 use chrono::Local;
+use std::fs;
 
 pub(crate) fn make_migration(config: Config, opts: MakeCommandOpt) -> StdResult<()> {
     let now = Local::now().format("%y%m%d%H%M%S");
@@ -17,25 +17,21 @@ pub(crate) fn make_migration(config: Config, opts: MakeCommandOpt) -> StdResult<
         })
         .collect();
 
-    let migration_dir_path = PathBuilder::from(config.migration_dir_path())
-        .append(format!("{}_{}", now, migration_name))
-        .build();
+    let migration_dir_path = config
+        .migration_dir_path()
+        .join(format!("{}_{}", now, migration_name));
     if !migration_dir_path.exists() {
-        std::fs::create_dir_all(&migration_dir_path)?;
+        fs::create_dir_all(&migration_dir_path)?;
     }
 
-    let upgrade_migration_path = PathBuilder::from(&migration_dir_path)
-        .append("up.sql")
-        .build();
+    let upgrade_migration_path = &migration_dir_path.join("up.sql");
     if !upgrade_migration_path.exists() {
-        std::fs::write(upgrade_migration_path, "-- Your SQL goes here\n\n")?;
+        fs::write(upgrade_migration_path, "-- Your SQL goes here\n\n")?;
     }
 
-    let downgrade_migration_path = PathBuilder::from(&migration_dir_path)
-        .append("down.sql")
-        .build();
+    let downgrade_migration_path = &migration_dir_path.join("down.sql");
     if !downgrade_migration_path.exists() {
-        std::fs::write(
+        fs::write(
             downgrade_migration_path,
             "-- This file should undo anything in `up.sql`\n\n",
         )?;
