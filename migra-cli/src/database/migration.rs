@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub struct Migration {
-    upgrade_sql: PathBuf,
-    downgrade_sql: PathBuf,
+    upgrade_sql_file_path: PathBuf,
+    downgrade_sql_file_path: PathBuf,
     name: String,
 }
 
@@ -19,13 +19,13 @@ impl Migration {
                 .file_name()
                 .and_then(|name| name.to_str())
                 .unwrap_or_default();
-            let upgrade_sql = directory.join("up.sql");
-            let downgrade_sql = directory.join("down.sql");
+            let upgrade_sql_file_path = directory.join("up.sql");
+            let downgrade_sql_file_path = directory.join("down.sql");
 
-            if upgrade_sql.exists() && downgrade_sql.exists() {
+            if upgrade_sql_file_path.exists() && downgrade_sql_file_path.exists() {
                 return Some(Migration {
-                    upgrade_sql,
-                    downgrade_sql,
+                    upgrade_sql_file_path,
+                    downgrade_sql_file_path,
                     name: String::from(name),
                 });
             }
@@ -41,12 +41,12 @@ impl Migration {
     }
 
     fn upgrade_sql_content(&self) -> StdResult<String> {
-        let content = fs::read_to_string(&self.upgrade_sql)?;
+        let content = fs::read_to_string(&self.upgrade_sql_file_path)?;
         Ok(content)
     }
 
     fn downgrade_sql_content(&self) -> StdResult<String> {
-        let content = fs::read_to_string(&self.downgrade_sql)?;
+        let content = fs::read_to_string(&self.downgrade_sql_file_path)?;
         Ok(content)
     }
 }
