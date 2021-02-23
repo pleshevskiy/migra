@@ -12,6 +12,7 @@ mod opts;
 use crate::error::StdResult;
 use config::Config;
 use opts::{AppOpt, Command, StructOpt};
+use std::io;
 
 fn main() -> StdResult<()> {
     let opt = AppOpt::from_args();
@@ -39,6 +40,13 @@ fn main() -> StdResult<()> {
         Command::Downgrade => {
             let config = Config::read(opt.config)?;
             commands::downgrade_applied_migrations(config)?;
+        }
+        Command::Completions(opts) => {
+            AppOpt::clap().gen_completions_to(
+                env!("CARGO_BIN_NAME"),
+                opts.into(),
+                &mut io::stdout(),
+            );
         }
     }
 

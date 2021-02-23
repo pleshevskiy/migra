@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use structopt::clap;
 pub use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -27,6 +28,8 @@ pub(crate) enum Command {
 
     #[structopt(name = "downgrade", visible_alias = "down")]
     Downgrade,
+
+    Completions(CompletionsShell),
 }
 
 #[derive(Debug, StructOpt)]
@@ -39,4 +42,25 @@ pub(crate) struct ApplyCommandOpt {
 pub(crate) struct MakeCommandOpt {
     #[structopt(parse(from_str))]
     pub migration_name: String,
+}
+
+#[derive(Debug, StructOpt)]
+pub(crate) enum CompletionsShell {
+    Bash,
+    Fish,
+    Zsh,
+    PowerShell,
+    Elvish,
+}
+
+impl From<CompletionsShell> for clap::Shell {
+    fn from(shell: CompletionsShell) -> Self {
+        match shell {
+            CompletionsShell::Bash => Self::Bash,
+            CompletionsShell::Fish => Self::Fish,
+            CompletionsShell::Zsh => Self::Zsh,
+            CompletionsShell::PowerShell => Self::PowerShell,
+            CompletionsShell::Elvish => Self::Elvish,
+        }
+    }
 }
