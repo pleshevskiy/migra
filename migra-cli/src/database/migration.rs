@@ -1,6 +1,5 @@
+use super::connection::{DatabaseConnection, DatabaseConnectionManager};
 use crate::config::Config;
-use crate::database::DatabaseConnection;
-use crate::databases::DatabaseConnectionManager;
 use crate::StdResult;
 use std::convert::TryFrom;
 use std::fs;

@@ -1,10 +1,19 @@
-mod postgres;
-
-pub use self::postgres::*;
-
+use super::adapter::ToSqlParams;
+use super::clients::*;
 use crate::config::{DatabaseConfig, SupportedDatabaseClient};
-use crate::database::{DatabaseConnection, OpenDatabaseConnection};
 use crate::error::StdResult;
+
+pub trait OpenDatabaseConnection: Sized {
+    fn open(connection_string: &str) -> StdResult<Self>;
+}
+
+pub trait DatabaseConnection {
+    fn batch_execute(&mut self, query: &str) -> StdResult<()>;
+
+    fn execute<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<u64>;
+
+    fn query<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<Vec<Vec<String>>>;
+}
 
 pub(crate) struct DatabaseConnectionManager {
     config: DatabaseConfig,

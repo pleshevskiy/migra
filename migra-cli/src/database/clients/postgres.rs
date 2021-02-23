@@ -1,4 +1,5 @@
-use crate::database::*;
+use crate::database::builder::merge_query_with_params;
+use crate::database::prelude::*;
 use crate::error::StdResult;
 use postgres::{Client, NoTls};
 

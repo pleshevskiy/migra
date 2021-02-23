@@ -1,5 +1,5 @@
+use crate::database::migration::Migration;
 use crate::error::{Error, MigraResult};
-use crate::migration::Migration;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};

@@ -1,32 +1,4 @@
-use crate::StdResult;
-
-pub trait ToSql {
-    fn to_sql(&self) -> String;
-}
-
-pub type ToSqlParams<'a> = &'a [&'a dyn ToSql];
-
-impl ToSql for &str {
-    fn to_sql(&self) -> String {
-        format!("'{}'", self)
-    }
-}
-
-pub trait TryFromSql<QueryResultRow>: Sized {
-    fn try_from_sql(row: QueryResultRow) -> StdResult<Self>;
-}
-
-pub trait OpenDatabaseConnection: Sized {
-    fn open(connection_string: &str) -> StdResult<Self>;
-}
-
-pub trait DatabaseConnection {
-    fn batch_execute(&mut self, query: &str) -> StdResult<()>;
-
-    fn execute<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<u64>;
-
-    fn query<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<Vec<Vec<String>>>;
-}
+use super::prelude::*;
 
 pub(crate) fn merge_query_with_params(query: &str, params: ToSqlParams) -> String {
     params

@@ -1,6 +1,4 @@
-use crate::migration::{
-    filter_pending_migrations, DatabaseMigrationManager, Migration, MigrationManager,
-};
+use crate::database::migration::*;
 use crate::Config;
 use crate::StdResult;
 use std::convert::TryFrom;

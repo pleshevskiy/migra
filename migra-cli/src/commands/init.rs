@@ -1,5 +1,4 @@
-use crate::config::Config;
-use crate::config::MIGRA_TOML_FILENAME;
+use crate::config::{Config, MIGRA_TOML_FILENAME};
 use crate::StdResult;
 use std::path::PathBuf;
 

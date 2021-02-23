@@ -1,9 +1,8 @@
 use crate::config::Config;
-use crate::databases::*;
+use crate::database::migration::filter_pending_migrations;
+use crate::database::prelude::*;
+use crate::database::{DatabaseConnectionManager, Migration, MigrationManager};
 use crate::error::{Error, StdResult};
-use crate::migration::{
-    filter_pending_migrations, DatabaseMigrationManager, Migration, MigrationManager,
-};
 
 const EM_DASH: char = '—';
 

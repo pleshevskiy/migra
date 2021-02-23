@@ -1,5 +1,6 @@
 use crate::config::Config;
-use crate::migration::{DatabaseMigrationManager, MigrationManager};
+use crate::database::prelude::*;
+use crate::database::MigrationManager;
 use crate::StdResult;
 use std::convert::TryFrom;
 
