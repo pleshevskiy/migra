@@ -51,6 +51,10 @@ pub(crate) struct UpgradeCommandOpt {
     /// in the database.
     #[structopt(long = "name")]
     pub migration_name: Option<String>,
+
+    /// How many existing migrations do we have to update.
+    #[structopt(long = "number", short = "n")]
+    pub migrations_number: Option<usize>,
 }
 
 #[derive(Debug, StructOpt)]

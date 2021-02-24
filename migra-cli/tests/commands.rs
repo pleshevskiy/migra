@@ -246,13 +246,8 @@ Pending migrations:
             .arg("-c")
             .arg(path_to_file("Migra_env.toml"))
             .arg("up")
-            .assert()
-            .success();
-
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("down")
+            .arg("-n")
+            .arg("1")
             .assert()
             .success();
 

@@ -27,7 +27,11 @@ pub(crate) fn upgrade_pending_migrations(config: Config, opts: UpgradeCommandOpt
             }
         }
     } else {
-        for migration in pending_migrations.iter() {
+        let upgrade_migrations_number = opts
+            .migrations_number
+            .unwrap_or_else(|| pending_migrations.len());
+
+        for migration in &pending_migrations[..upgrade_migrations_number] {
             print_migration_info(migration);
             manager.upgrade(migration)?;
         }
