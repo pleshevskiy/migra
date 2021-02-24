@@ -229,8 +229,7 @@ Pending migrations:
             .arg("-c")
             .arg(path_to_file("Migra_env.toml"))
             .arg("down")
-            .arg("-n")
-            .arg("2")
+            .arg("--all")
             .assert()
             .success();
 

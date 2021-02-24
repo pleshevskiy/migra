@@ -49,6 +49,10 @@ pub(crate) struct DowngradeCommandOpt {
     /// How many applied migrations do we have to rollback
     #[structopt(long = "number", short = "n", default_value = "1")]
     pub migrations_number: usize,
+
+    /// Rolls back all applied migrations. Ignores --number option.
+    #[structopt(long = "all")]
+    pub all_migrations: bool,
 }
 
 #[derive(Debug, StructOpt)]
