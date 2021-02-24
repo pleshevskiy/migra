@@ -35,9 +35,9 @@ fn main() -> StdResult<()> {
             let config = Config::read(opt.config)?;
             commands::upgrade_pending_migrations(config)?;
         }
-        Command::Downgrade => {
+        Command::Downgrade(opts) => {
             let config = Config::read(opt.config)?;
-            commands::downgrade_applied_migrations(config)?;
+            commands::rollback_applied_migrations(config, opts)?;
         }
         Command::Completions(opts) => {
             AppOpt::clap().gen_completions_to(

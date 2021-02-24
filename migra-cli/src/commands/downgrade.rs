@@ -1,20 +1,24 @@
 use crate::config::Config;
 use crate::database::prelude::*;
 use crate::database::MigrationManager;
+use crate::opts::DowngradeCommandOpt;
 use crate::StdResult;
+use std::cmp;
 use std::convert::TryFrom;
 
-pub(crate) fn downgrade_applied_migrations(config: Config) -> StdResult<()> {
+pub(crate) fn rollback_applied_migrations(
+    config: Config,
+    opts: DowngradeCommandOpt,
+) -> StdResult<()> {
     let mut manager = MigrationManager::try_from(&config)?;
 
     let applied_migrations = manager.applied_migration_names()?;
     let migrations = config.migrations()?;
 
-    if let Some(first_applied_migration) = applied_migrations.first() {
-        if let Some(migration) = migrations
-            .iter()
-            .find(|m| m.name() == first_applied_migration)
-        {
+    let rollback_migrations_number = cmp::min(opts.migrations_number, applied_migrations.len());
+
+    for migration_name in &applied_migrations[..rollback_migrations_number] {
+        if let Some(migration) = migrations.iter().find(|m| m.name() == migration_name) {
             println!("downgrade {}...", migration.name());
             manager.downgrade(&migration)?;
         }

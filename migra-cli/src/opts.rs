@@ -27,7 +27,7 @@ pub(crate) enum Command {
     Upgrade,
 
     #[structopt(name = "downgrade", visible_alias = "down")]
-    Downgrade,
+    Downgrade(DowngradeCommandOpt),
 
     Completions(CompletionsShell),
 }
@@ -42,6 +42,13 @@ pub(crate) struct ApplyCommandOpt {
 pub(crate) struct MakeCommandOpt {
     #[structopt(parse(from_str))]
     pub migration_name: String,
+}
+
+#[derive(Debug, StructOpt)]
+pub(crate) struct DowngradeCommandOpt {
+    /// How many applied migrations do we have to rollback
+    #[structopt(long = "number", short = "n", default_value = "1")]
+    pub migrations_number: usize,
 }
 
 #[derive(Debug, StructOpt)]
