@@ -1,39 +1,41 @@
 use crate::database::migration::*;
+use crate::opts::UpgradeCommandOpt;
 use crate::Config;
 use crate::StdResult;
 use std::convert::TryFrom;
 
-pub(crate) fn upgrade_pending_migrations(config: Config) -> StdResult<()> {
+pub(crate) fn upgrade_pending_migrations(config: Config, opts: UpgradeCommandOpt) -> StdResult<()> {
     let mut manager = MigrationManager::try_from(&config)?;
 
     let applied_migration_names = manager.applied_migration_names()?;
     let migrations = config.migrations()?;
 
-    if is_up_to_date_migrations(&migrations, &applied_migration_names) {
+    let pending_migrations = filter_pending_migrations(migrations, &applied_migration_names);
+    if pending_migrations.is_empty() {
         println!("Up to date");
+    } else if let Some(migration_name) = opts.migration_name {
+        let target_migration = pending_migrations
+            .iter()
+            .find(|m| m.name() == &migration_name);
+        match target_migration {
+            Some(migration) => {
+                print_migration_info(migration);
+                manager.upgrade(migration)?;
+            }
+            None => {
+                eprintln!(r#"Cannot find migration with "{}" name"#, migration_name);
+            }
+        }
     } else {
-        let pending_migrations = filter_pending_migrations(migrations, &applied_migration_names);
-        upgrade_all_pending_migrations(manager, &pending_migrations)?;
+        for migration in pending_migrations.iter() {
+            print_migration_info(migration);
+            manager.upgrade(migration)?;
+        }
     }
 
     Ok(())
 }
 
-fn is_up_to_date_migrations(migrations: &[Migration], applied_migration_names: &[String]) -> bool {
-    migrations.is_empty() || migrations.last().map(|m| m.name()) == applied_migration_names.first()
-}
-
-fn upgrade_all_pending_migrations<ManagerT>(
-    mut manager: ManagerT,
-    pending_migrations: &[Migration],
-) -> StdResult<()>
-where
-    ManagerT: Sized + DatabaseMigrationManager,
-{
-    for migration in pending_migrations.iter() {
-        println!("upgrade {}...", migration.name());
-        manager.upgrade(migration)?;
-    }
-
-    Ok(())
+fn print_migration_info(migration: &Migration) {
+    println!("upgrade {}...", migration.name());
 }

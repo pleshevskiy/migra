@@ -31,9 +31,9 @@ fn main() -> StdResult<()> {
             let config = Config::read(opt.config)?;
             commands::print_migration_lists(config)?;
         }
-        Command::Upgrade => {
+        Command::Upgrade(opts) => {
             let config = Config::read(opt.config)?;
-            commands::upgrade_pending_migrations(config)?;
+            commands::upgrade_pending_migrations(config, opts)?;
         }
         Command::Downgrade(opts) => {
             let config = Config::read(opt.config)?;

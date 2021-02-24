@@ -24,7 +24,7 @@ pub(crate) enum Command {
     List,
 
     #[structopt(name = "upgrade", visible_alias = "up")]
-    Upgrade,
+    Upgrade(UpgradeCommandOpt),
 
     #[structopt(name = "downgrade", visible_alias = "down")]
     Downgrade(DowngradeCommandOpt),
@@ -40,13 +40,22 @@ pub(crate) struct ApplyCommandOpt {
 
 #[derive(Debug, StructOpt)]
 pub(crate) struct MakeCommandOpt {
+    /// Name of the migration to create in specify directory.
     #[structopt(parse(from_str))]
     pub migration_name: String,
 }
 
 #[derive(Debug, StructOpt)]
+pub(crate) struct UpgradeCommandOpt {
+    /// Name of the existing migration that will update the schema
+    /// in the database.
+    #[structopt(long = "name")]
+    pub migration_name: Option<String>,
+}
+
+#[derive(Debug, StructOpt)]
 pub(crate) struct DowngradeCommandOpt {
-    /// How many applied migrations do we have to rollback
+    /// How many applied migrations do we have to rollback.
     #[structopt(long = "number", short = "n", default_value = "1")]
     pub migrations_number: usize,
 
