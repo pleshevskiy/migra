@@ -13,6 +13,9 @@ use opts::{AppOpt, Command, StructOpt};
 use std::io;
 
 fn main() -> StdResult<()> {
+    #[cfg(feature = "dotenv")]
+    dotenv::dotenv().ok();
+
     let opt = AppOpt::from_args();
 
     match opt.command {
