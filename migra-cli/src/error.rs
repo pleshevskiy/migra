@@ -12,7 +12,7 @@ pub enum Error {
     RootNotFound,
     MissedEnvVar(String),
 
-    IoError(io::Error),
+    Io(io::Error),
 }
 
 impl fmt::Display for Error {
@@ -22,7 +22,7 @@ impl fmt::Display for Error {
             Error::MissedEnvVar(ref name) => {
                 write!(fmt, r#"Missed "{}" environment variable"#, name)
             }
-            Error::IoError(ref error) => write!(fmt, "{}", error),
+            Error::Io(ref error) => write!(fmt, "{}", error),
         }
     }
 }
@@ -38,6 +38,6 @@ impl PartialEq for Error {
 impl From<io::Error> for Error {
     #[inline]
     fn from(err: io::Error) -> Error {
-        Error::IoError(err)
+        Error::Io(err)
     }
 }
