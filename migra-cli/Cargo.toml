@@ -1,6 +1,6 @@
 [package]
 name = "migra-cli"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Dmitriy Pleshevskiy <dmitriy@ideascup.me>"]
 edition = "2018"
 description = "Simple SQL migration manager for your project"
@@ -12,13 +12,6 @@ categories = ["accessibility", "database", "command-line-interface"]
 readme = "../README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[[bin]]
-name = "migra"
-path = "src/main.rs"
-
-[[test]]
-name = "integration"
-path = "tests/commands.rs"
 
 [dependencies]
 structopt = "0.3"
@@ -28,9 +21,20 @@ chrono = "0.4"
 postgres = "0.19"
 dotenv = { version = "0.15", optional = true }
 
+[features]
+default = []
+
+[badges]
+maintenance = { states = "actively-developed" }
+
+[[bin]]
+name = "migra"
+path = "src/main.rs"
+
+[[test]]
+name = "integration"
+path = "tests/commands.rs"
+
 [dev-dependencies]
 assert_cmd = "1"
 predicates = "1"
-
-[features]
-default = []
