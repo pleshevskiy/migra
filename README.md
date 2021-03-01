@@ -13,6 +13,12 @@ Simple SQL migration manager for your project.
 cargo install migra-cli
 ```
 
+if you want to use dotenv for configure migra cli, just run the following in your terminal.
+
+```bash
+cargo install migra-cli --features dotenv
+```
+
 
 ### Usage
 
