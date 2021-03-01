@@ -3,6 +3,8 @@ use super::clients::*;
 use crate::config::{DatabaseConfig, SupportedDatabaseClient};
 use crate::error::StdResult;
 
+pub type AnyConnection = Box<dyn DatabaseConnection>;
+
 pub trait OpenDatabaseConnection: Sized {
     fn open(connection_string: &str) -> StdResult<Self>;
 }
@@ -16,29 +18,29 @@ pub trait DatabaseConnection {
 }
 
 pub(crate) struct DatabaseConnectionManager {
-    config: DatabaseConfig,
+    conn: AnyConnection,
 }
 
 impl DatabaseConnectionManager {
-    pub fn new(config: &DatabaseConfig) -> Self {
-        Self {
-            config: config.clone(),
-        }
-    }
-
     pub fn connect_with_string(
-        &self,
+        config: &DatabaseConfig,
         connection_string: &str,
-    ) -> StdResult<Box<dyn DatabaseConnection>> {
-        let conn = match self.config.client()? {
+    ) -> StdResult<Self> {
+        let conn = match config.client()? {
             SupportedDatabaseClient::Postgres => PostgresConnection::open(&connection_string)?,
         };
 
-        Ok(Box::new(conn))
+        Ok(DatabaseConnectionManager {
+            conn: Box::new(conn),
+        })
     }
 
-    pub fn connect(&self) -> StdResult<Box<dyn DatabaseConnection>> {
-        let connection_string = self.config.connection_string()?;
-        self.connect_with_string(&connection_string)
+    pub fn connect(config: &DatabaseConfig) -> StdResult<Self> {
+        let connection_string = config.connection_string()?;
+        Self::connect_with_string(config, &connection_string)
+    }
+
+    pub fn connection(&mut self) -> &mut AnyConnection {
+        &mut self.conn
     }
 }

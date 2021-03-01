@@ -9,11 +9,14 @@ const EM_DASH: char = '—';
 pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
     let applied_migration_names = match config.database.connection_string() {
         Ok(ref database_connection_string) => {
-            let connection_manager = DatabaseConnectionManager::new(&config.database);
-            let conn = connection_manager.connect_with_string(database_connection_string)?;
-            let mut manager = MigrationManager::new(conn);
+            let mut connection_manager = DatabaseConnectionManager::connect_with_string(
+                &config.database,
+                database_connection_string,
+            )?;
+            let conn = connection_manager.connection();
 
-            let applied_migration_names = manager.applied_migration_names()?;
+            let migration_manager = MigrationManager::new();
+            let applied_migration_names = migration_manager.applied_migration_names(conn)?;
 
             show_applied_migrations(&applied_migration_names);
 

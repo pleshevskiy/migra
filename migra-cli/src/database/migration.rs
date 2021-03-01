@@ -1,7 +1,5 @@
-use super::connection::{DatabaseConnection, DatabaseConnectionManager};
-use crate::config::Config;
+use super::connection::AnyConnection;
 use crate::StdResult;
-use std::convert::TryFrom;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -51,23 +49,12 @@ impl Migration {
     }
 }
 
-pub struct MigrationManager {
-    pub(crate) conn: Box<dyn DatabaseConnection>,
-}
+#[derive(Debug)]
+pub struct MigrationManager;
 
 impl MigrationManager {
-    pub fn new(conn: Box<dyn DatabaseConnection>) -> Self {
-        MigrationManager { conn }
-    }
-}
-
-impl TryFrom<&Config> for MigrationManager {
-    type Error = Box<dyn std::error::Error>;
-
-    fn try_from(config: &Config) -> Result<Self, Self::Error> {
-        let connection_manager = DatabaseConnectionManager::new(&config.database);
-        let conn = connection_manager.connect()?;
-        Ok(Self { conn })
+    pub fn new() -> Self {
+        MigrationManager
     }
 }
 
@@ -77,44 +64,44 @@ pub fn is_migrations_table_not_found<D: std::fmt::Display>(error: D) -> bool {
         .contains(r#"relation "migrations" does not exist"#)
 }
 
-pub trait DatabaseMigrationManager {
-    fn apply_sql(&mut self, sql_content: &str) -> StdResult<()>;
+pub trait ManageMigration {
+    fn apply_sql(&self, conn: &mut AnyConnection, sql_content: &str) -> StdResult<()>;
 
-    fn create_migrations_table(&mut self) -> StdResult<()>;
+    fn create_migrations_table(&self, conn: &mut AnyConnection) -> StdResult<()>;
 
-    fn insert_migration_info(&mut self, name: &str) -> StdResult<u64>;
+    fn insert_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64>;
 
-    fn delete_migration_info(&mut self, name: &str) -> StdResult<u64>;
+    fn delete_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64>;
 
-    fn applied_migration_names(&mut self) -> StdResult<Vec<String>>;
+    fn applied_migration_names(&self, conn: &mut AnyConnection) -> StdResult<Vec<String>>;
 
-    fn upgrade(&mut self, migration: &Migration) -> StdResult<()> {
+    fn upgrade(&self, conn: &mut AnyConnection, migration: &Migration) -> StdResult<()> {
         let content = migration.upgrade_sql_content()?;
 
-        self.create_migrations_table()?;
-        self.apply_sql(&content)?;
-        self.insert_migration_info(migration.name())?;
+        self.create_migrations_table(conn)?;
+        self.apply_sql(conn, &content)?;
+        self.insert_migration_info(conn, migration.name())?;
 
         Ok(())
     }
 
-    fn downgrade(&mut self, migration: &Migration) -> StdResult<()> {
+    fn downgrade(&self, conn: &mut AnyConnection, migration: &Migration) -> StdResult<()> {
         let content = migration.downgrade_sql_content()?;
 
-        self.apply_sql(&content)?;
-        self.delete_migration_info(migration.name())?;
+        self.apply_sql(conn, &content)?;
+        self.delete_migration_info(conn, migration.name())?;
 
         Ok(())
     }
 }
 
-impl DatabaseMigrationManager for MigrationManager {
-    fn apply_sql(&mut self, sql_content: &str) -> StdResult<()> {
-        self.conn.batch_execute(sql_content)
+impl ManageMigration for MigrationManager {
+    fn apply_sql(&self, conn: &mut AnyConnection, sql_content: &str) -> StdResult<()> {
+        conn.batch_execute(sql_content)
     }
 
-    fn create_migrations_table(&mut self) -> StdResult<()> {
-        self.conn.batch_execute(
+    fn create_migrations_table(&self, conn: &mut AnyConnection) -> StdResult<()> {
+        conn.batch_execute(
             r#"CREATE TABLE IF NOT EXISTS migrations (
                 id      serial      PRIMARY KEY,
                 name    text        NOT NULL UNIQUE
@@ -122,19 +109,16 @@ impl DatabaseMigrationManager for MigrationManager {
         )
     }
 
-    fn insert_migration_info(&mut self, name: &str) -> StdResult<u64> {
-        self.conn
-            .execute("INSERT INTO migrations (name) VALUES ($1)", &[&name])
+    fn insert_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64> {
+        conn.execute("INSERT INTO migrations (name) VALUES ($1)", &[&name])
     }
 
-    fn delete_migration_info(&mut self, name: &str) -> StdResult<u64> {
-        self.conn
-            .execute("DELETE FROM migrations WHERE name = $1", &[&name])
+    fn delete_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64> {
+        conn.execute("DELETE FROM migrations WHERE name = $1", &[&name])
     }
 
-    fn applied_migration_names(&mut self) -> StdResult<Vec<String>> {
-        let res = self
-            .conn
+    fn applied_migration_names(&self, conn: &mut AnyConnection) -> StdResult<Vec<String>> {
+        let res = conn
             .query("SELECT name FROM migrations ORDER BY id DESC", &[])
             .or_else(|e| {
                 if is_migrations_table_not_found(&e) {

@@ -1,13 +1,17 @@
 use crate::database::migration::*;
+use crate::database::transaction::with_transaction;
+use crate::database::DatabaseConnectionManager;
 use crate::opts::UpgradeCommandOpt;
 use crate::Config;
 use crate::StdResult;
-use std::convert::TryFrom;
 
 pub(crate) fn upgrade_pending_migrations(config: Config, opts: UpgradeCommandOpt) -> StdResult<()> {
-    let mut manager = MigrationManager::try_from(&config)?;
+    let mut connection_manager = DatabaseConnectionManager::connect(&config.database)?;
+    let conn = connection_manager.connection();
 
-    let applied_migration_names = manager.applied_migration_names()?;
+    let migration_manager = MigrationManager::new();
+
+    let applied_migration_names = migration_manager.applied_migration_names(conn)?;
     let migrations = config.migrations()?;
 
     let pending_migrations = filter_pending_migrations(migrations, &applied_migration_names);
@@ -20,7 +24,7 @@ pub(crate) fn upgrade_pending_migrations(config: Config, opts: UpgradeCommandOpt
         match target_migration {
             Some(migration) => {
                 print_migration_info(migration);
-                manager.upgrade(migration)?;
+                with_transaction(conn, &mut |conn| migration_manager.upgrade(conn, migration))?;
             }
             None => {
                 eprintln!(r#"Cannot find migration with "{}" name"#, migration_name);
@@ -33,7 +37,7 @@ pub(crate) fn upgrade_pending_migrations(config: Config, opts: UpgradeCommandOpt
 
         for migration in &pending_migrations[..upgrade_migrations_number] {
             print_migration_info(migration);
-            manager.upgrade(migration)?;
+            with_transaction(conn, &mut |conn| migration_manager.upgrade(conn, migration))?;
         }
     }
 

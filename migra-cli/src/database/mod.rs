@@ -3,11 +3,13 @@ pub(crate) mod builder;
 pub(crate) mod clients;
 pub(crate) mod connection;
 pub(crate) mod migration;
+pub(crate) mod transaction;
 
 pub mod prelude {
     pub use super::adapter::{ToSql, ToSqlParams, TryFromSql};
-    pub use super::connection::{DatabaseConnection, OpenDatabaseConnection};
-    pub use super::migration::DatabaseMigrationManager;
+    pub use super::connection::{AnyConnection, DatabaseConnection, OpenDatabaseConnection};
+    pub use super::migration::ManageMigration;
+    pub use super::transaction::ManageTransaction;
 }
 
 pub(crate) use connection::DatabaseConnectionManager;
