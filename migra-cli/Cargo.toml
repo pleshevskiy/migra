@@ -1,6 +1,6 @@
 [package]
 name = "migra-cli"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Dmitriy Pleshevskiy <dmitriy@ideascup.me>"]
 edition = "2018"
 description = "Simple SQL migration manager for your project"
