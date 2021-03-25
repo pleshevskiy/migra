@@ -13,12 +13,19 @@ Simple SQL migration manager for your project.
 cargo install migra-cli
 ```
 
-if you want to use dotenv for configure migra cli, just run the following in your terminal.
+If you want to use dotenv for configure migra cli, just run the following in your terminal.
 
 ```bash
 cargo install migra-cli --features dotenv
 ```
 
+Each supported database is located in separate features with a similar name.
+The default is `postgres`.
+For example, if you only want to work with `mysql`, you need to disable `postgres` and enable `mysql`.
+
+```bash
+cargo install migra-cli --no-default-features --features mysql
+```
 
 ### Usage
 
