@@ -2,5 +2,6 @@
     "cSpell.words": [
         "migra"
     ],
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "rust.all_features": true
 }

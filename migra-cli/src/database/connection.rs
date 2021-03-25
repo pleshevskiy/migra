@@ -10,6 +10,8 @@ pub trait OpenDatabaseConnection: Sized {
 }
 
 pub trait DatabaseConnection {
+    fn migration_table_stmt(&self) -> String;
+
     fn batch_execute(&mut self, query: &str) -> StdResult<()>;
 
     fn execute<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<u64>;
@@ -26,13 +28,16 @@ impl DatabaseConnectionManager {
         config: &DatabaseConfig,
         connection_string: &str,
     ) -> StdResult<Self> {
-        let conn = match config.client()? {
-            SupportedDatabaseClient::Postgres => PostgresConnection::open(&connection_string)?,
+        let conn: AnyConnection = match config.client() {
+            #[cfg(feature = "postgres")]
+            SupportedDatabaseClient::Postgres => {
+                Box::new(PostgresConnection::open(&connection_string)?)
+            }
+            #[cfg(feature = "mysql")]
+            SupportedDatabaseClient::Mysql => Box::new(MySqlConnection::open(&connection_string)?),
         };
 
-        Ok(DatabaseConnectionManager {
-            conn: Box::new(conn),
-        })
+        Ok(DatabaseConnectionManager { conn })
     }
 
     pub fn connect(config: &DatabaseConfig) -> StdResult<Self> {

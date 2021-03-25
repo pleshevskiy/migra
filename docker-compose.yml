@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   postgres:
@@ -13,6 +13,22 @@ services:
     ports:
       - 6000:5432
 
+  mysql:
+    image: mysql
+    container_name: migra.mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: "migra_tests"
+      MYSQL_USER: "mysql"
+      MYSQL_PASSWORD: "mysql"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - 6001:3306
+
 volumes:
   postgres_data:
+    driver: local
+  mysql_data:
     driver: local

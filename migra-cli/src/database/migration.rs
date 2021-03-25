@@ -59,9 +59,12 @@ impl MigrationManager {
 }
 
 pub fn is_migrations_table_not_found<D: std::fmt::Display>(error: D) -> bool {
-    error
-        .to_string()
-        .contains(r#"relation "migrations" does not exist"#)
+    let error_message = error.to_string();
+
+    // Postgres error
+    error_message.contains(r#"relation "migrations" does not exist"#)
+        // MySQL error
+        || error_message.contains("ERROR 1146 (42S02)")
 }
 
 pub trait ManageMigration {
@@ -101,12 +104,8 @@ impl ManageMigration for MigrationManager {
     }
 
     fn create_migrations_table(&self, conn: &mut AnyConnection) -> StdResult<()> {
-        conn.batch_execute(
-            r#"CREATE TABLE IF NOT EXISTS migrations (
-                id      serial      PRIMARY KEY,
-                name    text        NOT NULL UNIQUE
-            )"#,
-        )
+        let stmt = conn.migration_table_stmt();
+        conn.batch_execute(&stmt)
     }
 
     fn insert_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64> {

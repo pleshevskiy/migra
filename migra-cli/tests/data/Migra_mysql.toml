@@ -1,0 +1,4 @@
+root = "./mysql"
+
+[database]
+connection = "mysql://mysql:mysql@localhost:6001/migra_tests"
