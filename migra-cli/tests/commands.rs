@@ -1,4 +1,5 @@
 pub use assert_cmd::prelude::*;
+pub use cfg_if::cfg_if;
 pub use predicates::str::contains;
 pub use std::process::Command;
 
@@ -6,12 +7,17 @@ pub type TestResult = std::result::Result<(), Box<dyn std::error::Error>>;
 
 pub const ROOT_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/");
 
-pub fn path_to_file(file_name: &'static str) -> String {
-    ROOT_PATH.to_owned() + file_name
+pub fn path_to_file<D: std::fmt::Display>(file_name: D) -> String {
+    format!("{}{}", ROOT_PATH, file_name)
+}
+
+pub fn database_manifest_path<D: std::fmt::Display>(database_name: D) -> String {
+    path_to_file(format!("Migra_{}.toml", database_name))
 }
 
 pub const DATABASE_URL_DEFAULT_ENV_NAME: &str = "DATABASE_URL";
-pub const DATABASE_URL_ENV_VALUE: &str = "postgres://postgres:postgres@localhost:6000/migra_tests";
+pub const POSTGRES_URL: &str = "postgres://postgres:postgres@localhost:6000/migra_tests";
+pub const MYSQL_URL: &str = "mysql://mysql:mysql@localhost:6001/migra_tests";
 
 pub struct Env {
     key: &'static str,
@@ -112,26 +118,37 @@ Pending migrations:
 
     #[test]
     fn empty_migration_list_with_db() -> TestResult {
-        let env = Env::new(DATABASE_URL_DEFAULT_ENV_NAME, DATABASE_URL_ENV_VALUE);
+        fn inner(connection_string: &'static str) -> TestResult {
+            let env = Env::new(DATABASE_URL_DEFAULT_ENV_NAME, connection_string);
 
-        Command::cargo_bin("migra")?
-            .arg("ls")
-            .assert()
-            .success()
-            .stdout(contains(
-                r#"Applied migrations:
+            Command::cargo_bin("migra")?
+                .arg("ls")
+                .assert()
+                .success()
+                .stdout(contains(
+                    r#"Applied migrations:
 —
 
 Pending migrations:
 —"#,
-            ));
+                ));
 
-        drop(env);
+            drop(env);
+
+            Ok(())
+        }
+
+        #[cfg(feature = "postgres")]
+        inner(POSTGRES_URL)?;
+
+        #[cfg(feature = "mysql")]
+        inner(MYSQL_URL)?;
 
         Ok(())
     }
 
     #[test]
+    #[cfg(feature = "postgres")]
     fn empty_migration_list_with_url_in_manifest() -> TestResult {
         Command::cargo_bin("migra")?
             .arg("-c")
@@ -151,8 +168,9 @@ Pending migrations:
     }
 
     #[test]
+    #[cfg(feature = "postgres")]
     fn empty_migration_list_with_env_in_manifest() -> TestResult {
-        let env = Env::new("DB_URL", DATABASE_URL_ENV_VALUE);
+        let env = Env::new("DB_URL", POSTGRES_URL);
 
         Command::cargo_bin("migra")?
             .arg("-c")
@@ -175,105 +193,127 @@ Pending migrations:
 
     #[test]
     fn empty_applied_migrations() -> TestResult {
-        let env = Env::new(DATABASE_URL_DEFAULT_ENV_NAME, DATABASE_URL_ENV_VALUE);
-
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("ls")
-            .assert()
-            .success()
-            .stdout(contains(
-                r#"Applied migrations:
+        fn inner(database_name: &'static str) -> TestResult {
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(database_manifest_path(database_name))
+                .arg("ls")
+                .assert()
+                .success()
+                .stdout(contains(
+                    r#"Applied migrations:
 —
 
 Pending migrations:
 210218232851_create_articles
 210218233414_create_persons
 "#,
-            ));
+                ));
 
-        drop(env);
+            Ok(())
+        }
+
+        #[cfg(feature = "postgres")]
+        inner("postgres")?;
+
+        #[cfg(feature = "mysql")]
+        inner("mysql")?;
 
         Ok(())
     }
 
     #[test]
     fn applied_all_migrations() -> TestResult {
-        let env = Env::new(DATABASE_URL_DEFAULT_ENV_NAME, DATABASE_URL_ENV_VALUE);
+        fn inner(database_name: &'static str) -> TestResult {
+            let manifest_path = database_manifest_path(database_name);
 
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("up")
-            .assert()
-            .success();
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("up")
+                .assert()
+                .success();
 
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("ls")
-            .assert()
-            .success()
-            .stdout(contains(
-                r#"Applied migrations:
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("ls")
+                .assert()
+                .success()
+                .stdout(contains(
+                    r#"Applied migrations:
 210218232851_create_articles
 210218233414_create_persons
 
 Pending migrations:
 —
 "#,
-            ));
+                ));
 
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("down")
-            .arg("--all")
-            .assert()
-            .success();
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("down")
+                .arg("--all")
+                .assert()
+                .success();
 
-        drop(env);
+            Ok(())
+        }
+
+        #[cfg(feature = "postgres")]
+        inner("postgres")?;
+
+        #[cfg(feature = "mysql")]
+        inner("mysql")?;
 
         Ok(())
     }
 
     #[test]
     fn applied_one_migrations() -> TestResult {
-        let env = Env::new(DATABASE_URL_DEFAULT_ENV_NAME, DATABASE_URL_ENV_VALUE);
+        fn inner(database_name: &'static str) -> TestResult {
+            let manifest_path = database_manifest_path(database_name);
 
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("up")
-            .arg("-n")
-            .arg("1")
-            .assert()
-            .success();
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("up")
+                .arg("-n")
+                .arg("1")
+                .assert()
+                .success();
 
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("ls")
-            .assert()
-            .success()
-            .stdout(contains(
-                r#"Applied migrations:
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("ls")
+                .assert()
+                .success()
+                .stdout(contains(
+                    r#"Applied migrations:
 210218232851_create_articles
 
 Pending migrations:
 210218233414_create_persons
 "#,
-            ));
+                ));
 
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("down")
-            .assert()
-            .success();
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("down")
+                .assert()
+                .success();
 
-        drop(env);
+            Ok(())
+        }
+
+        #[cfg(feature = "postgres")]
+        inner("postgres")?;
+
+        #[cfg(feature = "mysql")]
+        inner("mysql")?;
 
         Ok(())
     }
@@ -285,45 +325,55 @@ mod make {
 
     #[test]
     fn make_migration_directory() -> TestResult {
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_url.toml"))
-            .arg("make")
-            .arg("test")
-            .assert()
-            .success()
-            .stdout(contains("Structure for migration has been created in"));
+        fn inner(database_name: &'static str) -> TestResult {
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(database_manifest_path(database_name))
+                .arg("make")
+                .arg("test")
+                .assert()
+                .success()
+                .stdout(contains("Structure for migration has been created in"));
 
-        let entries = fs::read_dir(path_to_file("migrations"))?
-            .map(|entry| entry.map(|e| e.path()))
-            .collect::<Result<Vec<_>, std::io::Error>>()?;
+            let entries = fs::read_dir(path_to_file(format!("{}/migrations", database_name)))?
+                .map(|entry| entry.map(|e| e.path()))
+                .collect::<Result<Vec<_>, std::io::Error>>()?;
 
-        let dir_paths = entries
-            .iter()
-            .filter_map(|path| {
-                path.to_str().and_then(|path| {
-                    if path.ends_with("_test") {
-                        Some(path)
-                    } else {
-                        None
-                    }
+            let dir_paths = entries
+                .iter()
+                .filter_map(|path| {
+                    path.to_str().and_then(|path| {
+                        if path.ends_with("_test") {
+                            Some(path)
+                        } else {
+                            None
+                        }
+                    })
                 })
-            })
-            .collect::<Vec<_>>();
+                .collect::<Vec<_>>();
 
-        for dir_path in dir_paths.iter() {
-            let upgrade_content = fs::read_to_string(format!("{}/up.sql", dir_path))?;
-            let downgrade_content = fs::read_to_string(format!("{}/down.sql", dir_path))?;
+            for dir_path in dir_paths.iter() {
+                let upgrade_content = fs::read_to_string(format!("{}/up.sql", dir_path))?;
+                let downgrade_content = fs::read_to_string(format!("{}/down.sql", dir_path))?;
 
-            assert_eq!(upgrade_content, "-- Your SQL goes here\n\n");
+                assert_eq!(upgrade_content, "-- Your SQL goes here\n\n");
 
-            assert_eq!(
-                downgrade_content,
-                "-- This file should undo anything in `up.sql`\n\n"
-            );
+                assert_eq!(
+                    downgrade_content,
+                    "-- This file should undo anything in `up.sql`\n\n"
+                );
 
-            fs::remove_dir_all(dir_path)?;
+                fs::remove_dir_all(dir_path)?;
+            }
+
+            Ok(())
         }
+
+        #[cfg(feature = "postgres")]
+        inner("postgres")?;
+
+        #[cfg(feature = "mysql")]
+        inner("mysql")?;
 
         Ok(())
     }
@@ -334,40 +384,66 @@ mod upgrade {
 
     #[test]
     fn applied_all_migrations() -> TestResult {
-        let env = Env::new(DATABASE_URL_DEFAULT_ENV_NAME, DATABASE_URL_ENV_VALUE);
+        fn inner<ValidateFn>(database_name: &'static str, validate: ValidateFn) -> TestResult
+        where
+            ValidateFn: Fn() -> TestResult,
+        {
+            let manifest_path = database_manifest_path(database_name);
 
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("up")
-            .assert()
-            .success();
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("up")
+                .assert()
+                .success();
 
-        let mut conn = postgres::Client::connect(DATABASE_URL_ENV_VALUE, postgres::NoTls)?;
-        let res = conn.query("SELECT p.id, a.id FROM persons AS p, articles AS a", &[])?;
+            validate()?;
 
-        assert_eq!(
-            res.into_iter()
-                .map(|row| (row.get(0), row.get(1)))
-                .collect::<Vec<(i32, i32)>>(),
-            Vec::new()
-        );
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("down")
+                .assert()
+                .success();
 
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("down")
-            .assert()
-            .success();
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("down")
+                .assert()
+                .success();
 
-        Command::cargo_bin("migra")?
-            .arg("-c")
-            .arg(path_to_file("Migra_env.toml"))
-            .arg("down")
-            .assert()
-            .success();
+            Ok(())
+        }
 
-        drop(env);
+        #[cfg(feature = "postgres")]
+        inner("postgres", || {
+            let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+            let res = conn.query("SELECT p.id, a.id FROM persons AS p, articles AS a", &[])?;
+
+            assert_eq!(
+                res.into_iter()
+                    .map(|row| (row.get(0), row.get(1)))
+                    .collect::<Vec<(i32, i32)>>(),
+                Vec::new()
+            );
+
+            Ok(())
+        })?;
+
+        #[cfg(feature = "mysql")]
+        inner("mysql", || {
+            use mysql::prelude::*;
+
+            let pool = mysql::Pool::new(MYSQL_URL)?;
+            let mut conn = pool.get_conn()?;
+
+            let res = conn.query_drop("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
+
+            assert_eq!(res, ());
+
+            Ok(())
+        })?;
 
         Ok(())
     }

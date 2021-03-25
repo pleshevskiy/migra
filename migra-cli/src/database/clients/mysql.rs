@@ -1,52 +1,52 @@
 use crate::database::builder::merge_query_with_params;
 use crate::database::prelude::*;
 use crate::error::StdResult;
-use postgres::{Client, NoTls};
+use mysql::prelude::*;
+use mysql::{Pool, PooledConn};
 
-pub struct PostgresConnection {
-    client: Client,
+pub struct MySqlConnection {
+    pool: Pool,
 }
 
-impl OpenDatabaseConnection for PostgresConnection {
-    fn open(connection_string: &str) -> StdResult<Self> {
-        let client = Client::connect(connection_string, NoTls)?;
-        Ok(PostgresConnection { client })
+impl MySqlConnection {
+    fn client(&self) -> StdResult<PooledConn> {
+        let conn = self.pool.get_conn()?;
+        Ok(conn)
     }
 }
 
-impl DatabaseConnection for PostgresConnection {
+impl OpenDatabaseConnection for MySqlConnection {
+    fn open(connection_string: &str) -> StdResult<Self> {
+        let pool = Pool::new(connection_string)?;
+        Ok(MySqlConnection { pool })
+    }
+}
+
+impl DatabaseConnection for MySqlConnection {
     fn migration_table_stmt(&self) -> String {
         r#"CREATE TABLE IF NOT EXISTS migrations (
-            id      serial      PRIMARY KEY,
-            name    text        NOT NULL UNIQUE
+            id      int             AUTO_INCREMENT PRIMARY KEY,
+            name    varchar(256)    NOT NULL UNIQUE
         )"#
         .to_string()
     }
 
     fn batch_execute(&mut self, query: &str) -> StdResult<()> {
-        self.client.batch_execute(query)?;
+        self.client()?.query_drop(query)?;
         Ok(())
     }
 
     fn execute<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<u64> {
         let stmt = merge_query_with_params(query, params);
 
-        let res = self.client.execute(stmt.as_str(), &[])?;
+        let res = self.client()?.query_first(stmt)?.unwrap_or_default();
         Ok(res)
     }
 
     fn query<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<Vec<Vec<String>>> {
         let stmt = merge_query_with_params(query, params);
 
-        let res = self.client.query(stmt.as_str(), &[])?;
-
-        let res = res
-            .into_iter()
-            .map(|row| {
-                let column: String = row.get(0);
-                vec![column]
-            })
-            .collect::<Vec<_>>();
+        let res = self.client()?.query_map(stmt, |(column,)| vec![column])?;
 
         Ok(res)
     }

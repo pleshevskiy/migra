@@ -46,6 +46,7 @@ For more information about the commands, simply run `migra help`
 ### Supported databases
 
 - [x] Postgres
+- [x] MySQL
 
 
 ## License

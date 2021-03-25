@@ -1,6 +1,12 @@
 #![deny(clippy::all)]
 #![forbid(unsafe_code)]
 
+#[macro_use]
+extern crate cfg_if;
+
+#[cfg(not(any(feature = "postgres", feature = "mysql")))]
+compile_error!(r#"Either features "postgres" or "mysql" must be enabled for "migra" crate"#);
+
 mod commands;
 mod config;
 mod database;
