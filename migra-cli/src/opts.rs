@@ -2,17 +2,17 @@ use std::path::PathBuf;
 use structopt::clap;
 pub use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 #[structopt(bin_name = "migra", name = "Migra")]
 pub(crate) struct AppOpt {
-    #[structopt(short, long)]
-    pub config: Option<PathBuf>,
+    #[structopt(name = "config", short, long)]
+    pub config_path: Option<PathBuf>,
 
     #[structopt(subcommand)]
     pub command: Command,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub(crate) enum Command {
     Init,
 
@@ -32,20 +32,20 @@ pub(crate) enum Command {
     Completions(CompletionsShell),
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub(crate) struct ApplyCommandOpt {
     #[structopt(parse(from_str))]
     pub file_name: String,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub(crate) struct MakeCommandOpt {
     /// Name of the migration to create in specify directory.
     #[structopt(parse(from_str))]
     pub migration_name: String,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub(crate) struct UpgradeCommandOpt {
     /// Name of the existing migration that will update the schema
     /// in the database.
@@ -57,7 +57,7 @@ pub(crate) struct UpgradeCommandOpt {
     pub migrations_number: Option<usize>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub(crate) struct DowngradeCommandOpt {
     /// How many applied migrations do we have to rollback.
     #[structopt(long = "number", short = "n", default_value = "1")]
@@ -68,7 +68,7 @@ pub(crate) struct DowngradeCommandOpt {
     pub all_migrations: bool,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub(crate) enum CompletionsShell {
     Bash,
     Fish,

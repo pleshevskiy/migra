@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::app::App;
 use crate::database::prelude::*;
 use crate::database::transaction::with_transaction;
 use crate::database::{DatabaseConnectionManager, MigrationManager};
@@ -6,10 +6,8 @@ use crate::opts::DowngradeCommandOpt;
 use crate::StdResult;
 use std::cmp;
 
-pub(crate) fn rollback_applied_migrations(
-    config: Config,
-    opts: DowngradeCommandOpt,
-) -> StdResult<()> {
+pub(crate) fn rollback_applied_migrations(app: &App, opts: DowngradeCommandOpt) -> StdResult<()> {
+    let config = app.config()?;
     let mut connection_manager = DatabaseConnectionManager::connect(&config.database)?;
     let conn = connection_manager.connection();
     let migration_manager = MigrationManager::new();

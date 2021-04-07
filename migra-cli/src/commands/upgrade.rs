@@ -1,11 +1,12 @@
+use crate::app::App;
 use crate::database::migration::*;
 use crate::database::transaction::with_transaction;
 use crate::database::DatabaseConnectionManager;
 use crate::opts::UpgradeCommandOpt;
-use crate::Config;
 use crate::StdResult;
 
-pub(crate) fn upgrade_pending_migrations(config: Config, opts: UpgradeCommandOpt) -> StdResult<()> {
+pub(crate) fn upgrade_pending_migrations(app: &App, opts: UpgradeCommandOpt) -> StdResult<()> {
+    let config = app.config()?;
     let mut connection_manager = DatabaseConnectionManager::connect(&config.database)?;
     let conn = connection_manager.connection();
 
