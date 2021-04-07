@@ -22,15 +22,16 @@ impl OpenDatabaseConnection for MySqlConnection {
     }
 }
 
-impl DatabaseConnection for MySqlConnection {
-    fn migration_table_stmt(&self) -> String {
+impl DatabaseStatements for MySqlConnection {
+    fn create_migration_table_stmt(&self) -> &'static str {
         r#"CREATE TABLE IF NOT EXISTS migrations (
             id      int             AUTO_INCREMENT PRIMARY KEY,
             name    varchar(256)    NOT NULL UNIQUE
         )"#
-        .to_string()
     }
+}
 
+impl DatabaseConnection for MySqlConnection {
     fn batch_execute(&mut self, query: &str) -> StdResult<()> {
         self.client()?.query_drop(query)?;
         Ok(())

@@ -9,9 +9,11 @@ pub trait OpenDatabaseConnection: Sized {
     fn open(connection_string: &str) -> StdResult<Self>;
 }
 
-pub trait DatabaseConnection {
-    fn migration_table_stmt(&self) -> String;
+pub trait DatabaseStatements {
+    fn create_migration_table_stmt(&self) -> &'static str;
+}
 
+pub trait DatabaseConnection: DatabaseStatements {
     fn batch_execute(&mut self, query: &str) -> StdResult<()>;
 
     fn execute<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<u64>;

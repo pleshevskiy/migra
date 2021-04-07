@@ -104,7 +104,7 @@ impl ManageMigration for MigrationManager {
     }
 
     fn create_migrations_table(&self, conn: &mut AnyConnection) -> StdResult<()> {
-        let stmt = conn.migration_table_stmt();
+        let stmt = conn.create_migration_table_stmt();
         conn.batch_execute(&stmt)
     }
 

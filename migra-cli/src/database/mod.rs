@@ -7,7 +7,9 @@ pub(crate) mod transaction;
 
 pub mod prelude {
     pub use super::adapter::{ToSql, ToSqlParams, TryFromSql};
-    pub use super::connection::{AnyConnection, DatabaseConnection, OpenDatabaseConnection};
+    pub use super::connection::{
+        AnyConnection, DatabaseConnection, DatabaseStatements, OpenDatabaseConnection,
+    };
     pub use super::migration::ManageMigration;
     pub use super::transaction::ManageTransaction;
 }
