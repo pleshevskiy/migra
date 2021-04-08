@@ -14,15 +14,16 @@ impl OpenDatabaseConnection for PostgresConnection {
     }
 }
 
-impl DatabaseConnection for PostgresConnection {
-    fn migration_table_stmt(&self) -> String {
+impl DatabaseStatements for PostgresConnection {
+    fn create_migration_table_stmt(&self) -> &'static str {
         r#"CREATE TABLE IF NOT EXISTS migrations (
             id      serial      PRIMARY KEY,
             name    text        NOT NULL UNIQUE
         )"#
-        .to_string()
     }
+}
 
+impl DatabaseConnection for PostgresConnection {
     fn batch_execute(&mut self, query: &str) -> StdResult<()> {
         self.client.batch_execute(query)?;
         Ok(())
