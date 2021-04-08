@@ -1,10 +1,11 @@
+use crate::app::App;
 use crate::opts::MakeCommandOpt;
-use crate::Config;
 use crate::StdResult;
 use chrono::Local;
 use std::fs;
 
-pub(crate) fn make_migration(config: Config, opts: MakeCommandOpt) -> StdResult<()> {
+pub(crate) fn make_migration(app: &App, opts: MakeCommandOpt) -> StdResult<()> {
+    let config = app.config()?;
     let now = Local::now().format("%y%m%d%H%M%S");
 
     let migration_name: String = opts

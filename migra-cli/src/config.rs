@@ -134,12 +134,12 @@ fn recursive_find_project_root() -> MigraResult<PathBuf> {
 }
 
 impl Config {
-    pub fn read(config_path: Option<PathBuf>) -> MigraResult<Config> {
+    pub fn read(config_path: Option<&PathBuf>) -> MigraResult<Config> {
         let config_path = match config_path {
             Some(config_path) if config_path.is_dir() => {
                 Some(config_path.join(MIGRA_TOML_FILENAME))
             }
-            Some(config_path) => Some(config_path),
+            Some(config_path) => Some(config_path.clone()),
             None => recursive_find_project_root()
                 .map(|path| path.join(MIGRA_TOML_FILENAME))
                 .ok(),

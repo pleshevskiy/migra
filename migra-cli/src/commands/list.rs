@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::app::App;
 use crate::database::migration::filter_pending_migrations;
 use crate::database::prelude::*;
 use crate::database::{DatabaseConnectionManager, Migration, MigrationManager};
@@ -6,7 +6,8 @@ use crate::error::{Error, StdResult};
 
 const EM_DASH: char = '—';
 
-pub(crate) fn print_migration_lists(config: Config) -> StdResult<()> {
+pub(crate) fn print_migration_lists(app: &App) -> StdResult<()> {
+    let config = app.config()?;
     let applied_migration_names = match config.database.connection_string() {
         Ok(ref database_connection_string) => {
             let mut connection_manager = DatabaseConnectionManager::connect_with_string(
