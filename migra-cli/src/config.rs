@@ -176,7 +176,7 @@ impl Config {
             Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
             entries => entries?
                 .map(|res| res.map(|e| e.path()))
-                .collect::<Result<Vec<_>, io::Error>>()?,
+                .collect::<Result<Vec<_>, _>>()?,
         };
 
         if entries.is_empty() {

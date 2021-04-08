@@ -34,8 +34,8 @@ pub(crate) enum Command {
 
 #[derive(Debug, StructOpt, Clone)]
 pub(crate) struct ApplyCommandOpt {
-    #[structopt(parse(from_str))]
-    pub file_name: String,
+    #[structopt(parse(from_os_str), required = true)]
+    pub file_paths: Vec<PathBuf>,
 }
 
 #[derive(Debug, StructOpt, Clone)]
