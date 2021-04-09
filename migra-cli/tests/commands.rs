@@ -448,3 +448,120 @@ mod upgrade {
         Ok(())
     }
 }
+
+mod apply {
+    use super::*;
+
+    #[test]
+    fn apply_files() -> TestResult {
+        fn inner<ValidateFn>(
+            database_name: &'static str,
+            file_paths: Vec<&'static str>,
+            validate: ValidateFn,
+        ) -> TestResult
+        where
+            ValidateFn: Fn() -> TestResult,
+        {
+            let manifest_path = database_manifest_path(database_name);
+
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("apply")
+                .args(file_paths)
+                .assert()
+                .success();
+
+            validate()?;
+
+            Ok(())
+        }
+
+        cfg_if! {
+            if #[cfg(feature = "postgres")] {
+                inner(
+                    "postgres",
+                    vec![
+                        "migrations/210218232851_create_articles/up",
+                        "migrations/210218233414_create_persons/up",
+                    ],
+                    || {
+                        let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+                        let res = conn.query("SELECT p.id, a.id FROM persons AS p, articles AS a", &[])?;
+
+                        assert_eq!(
+                            res.into_iter()
+                                .map(|row| (row.get(0), row.get(1)))
+                                .collect::<Vec<(i32, i32)>>(),
+                            Vec::new()
+                        );
+
+                        Ok(())
+                    },
+                )?;
+
+                inner(
+                    "postgres",
+                    vec![
+                        "migrations/210218233414_create_persons/down",
+                        "migrations/210218232851_create_articles/down",
+                    ],
+                    || {
+                        let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+                        let res = conn.query("SELECT p.id, a.id FROM persons AS p, articles AS a", &[]);
+
+                        assert!(res.is_err());
+
+                        Ok(())
+                    },
+                )?;
+            }
+        }
+
+        cfg_if! {
+            if #[cfg(feature = "mysql")] {
+                inner(
+                    "mysql",
+                    vec![
+                        "migrations/210218232851_create_articles/up",
+                        "migrations/210218233414_create_persons/up",
+                    ],
+                    || {
+                        use mysql::prelude::*;
+
+                        let pool = mysql::Pool::new(MYSQL_URL)?;
+                        let mut conn = pool.get_conn()?;
+
+                        let res = conn.query_drop("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
+
+                        assert_eq!(res, ());
+
+                        Ok(())
+                    },
+                )?;
+
+                inner(
+                    "mysql",
+                    vec![
+                        "migrations/210218233414_create_persons/down",
+                        "migrations/210218232851_create_articles/down",
+                    ],
+                    || {
+                        use mysql::prelude::*;
+
+                        let pool = mysql::Pool::new(MYSQL_URL)?;
+                        let mut conn = pool.get_conn()?;
+
+                        let res = conn.query_drop("SELECT p.id, a.id FROM persons AS p, articles AS a");
+
+                        assert!(res.is_err());
+
+                        Ok(())
+                    }
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+}

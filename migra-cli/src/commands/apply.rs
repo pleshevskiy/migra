@@ -12,17 +12,24 @@ pub(crate) fn apply_sql(app: &App, cmd_opts: ApplyCommandOpt) -> StdResult<()> {
 
     let migration_manager = MigrationManager::new();
 
-    let file_path = {
-        let mut file_path = config.directory_path().join(cmd_opts.file_name);
-        if file_path.extension().is_none() {
-            file_path.set_extension("sql");
-        }
-        file_path
-    };
+    let file_contents = cmd_opts
+        .file_paths
+        .into_iter()
+        .map(|file_path| {
+            let mut file_path = config.directory_path().join(file_path);
+            if file_path.extension().is_none() {
+                file_path.set_extension("sql");
+            }
+            file_path
+        })
+        .map(std::fs::read_to_string)
+        .collect::<Result<Vec<_>, _>>()?;
 
-    let content = std::fs::read_to_string(file_path)?;
     with_transaction(conn, &mut |conn| {
-        migration_manager.apply_sql(conn, &content)
+        file_contents
+            .iter()
+            .try_for_each(|content| migration_manager.apply_sql(conn, content))?;
+        Ok(())
     })?;
 
     Ok(())
