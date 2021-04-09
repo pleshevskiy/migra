@@ -20,7 +20,6 @@ pub(crate) fn apply_sql(app: &App, cmd_opts: ApplyCommandOpt) -> StdResult<()> {
             if file_path.extension().is_none() {
                 file_path.set_extension("sql");
             }
-            dbg!(&file_path);
             file_path
         })
         .map(std::fs::read_to_string)
