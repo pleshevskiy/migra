@@ -46,3 +46,18 @@ where
         .and_then(|res| transaction_manager.commit_transaction(conn).and(Ok(res)))
         .or_else(|err| transaction_manager.rollback_transaction(conn).and(Err(err)))
 }
+
+pub fn maybe_with_transaction<TrxFnMut, Res>(
+    with: bool,
+    conn: &mut AnyConnection,
+    trx_fn: &mut TrxFnMut,
+) -> StdResult<Res>
+where
+    TrxFnMut: FnMut(&mut AnyConnection) -> StdResult<Res>,
+{
+    if with {
+        with_transaction(conn, trx_fn)
+    } else {
+        trx_fn(conn)
+    }
+}

@@ -1,6 +1,6 @@
 use crate::app::App;
 use crate::database::migration::*;
-use crate::database::transaction::with_transaction;
+use crate::database::transaction::maybe_with_transaction;
 use crate::database::DatabaseConnectionManager;
 use crate::opts::UpgradeCommandOpt;
 use crate::StdResult;
@@ -18,17 +18,18 @@ pub(crate) fn upgrade_pending_migrations(app: &App, opts: UpgradeCommandOpt) -> 
     let pending_migrations = filter_pending_migrations(migrations, &applied_migration_names);
     if pending_migrations.is_empty() {
         println!("Up to date");
-    } else if let Some(migration_name) = opts.migration_name {
+        return Ok(());
+    }
+
+    let migrations: Vec<Migration> = if let Some(migration_name) = opts.migration_name.clone() {
         let target_migration = pending_migrations
-            .iter()
+            .into_iter()
             .find(|m| m.name() == &migration_name);
         match target_migration {
-            Some(migration) => {
-                print_migration_info(migration);
-                with_transaction(conn, &mut |conn| migration_manager.upgrade(conn, migration))?;
-            }
+            Some(migration) => vec![migration],
             None => {
                 eprintln!(r#"Cannot find migration with "{}" name"#, migration_name);
+                return Ok(());
             }
         }
     } else {
@@ -36,11 +37,26 @@ pub(crate) fn upgrade_pending_migrations(app: &App, opts: UpgradeCommandOpt) -> 
             .migrations_number
             .unwrap_or_else(|| pending_migrations.len());
 
-        for migration in &pending_migrations[..upgrade_migrations_number] {
-            print_migration_info(migration);
-            with_transaction(conn, &mut |conn| migration_manager.upgrade(conn, migration))?;
-        }
-    }
+        pending_migrations[..upgrade_migrations_number].to_vec()
+    };
+
+    maybe_with_transaction(
+        opts.transaction_opts.single_transaction,
+        conn,
+        &mut |conn| {
+            migrations
+                .iter()
+                .try_for_each(|migration| {
+                    print_migration_info(migration);
+                    maybe_with_transaction(
+                        !opts.transaction_opts.single_transaction,
+                        conn,
+                        &mut |conn| migration_manager.upgrade(conn, migration),
+                    )
+                })
+                .map_err(From::from)
+        },
+    )?;
 
     Ok(())
 }

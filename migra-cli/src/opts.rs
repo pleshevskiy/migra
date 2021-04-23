@@ -33,9 +33,18 @@ pub(crate) enum Command {
 }
 
 #[derive(Debug, StructOpt, Clone)]
+pub(crate) struct TransactionOpts {
+    #[structopt(long = "single-transaction")]
+    pub single_transaction: bool,
+}
+
+#[derive(Debug, StructOpt, Clone)]
 pub(crate) struct ApplyCommandOpt {
     #[structopt(parse(from_os_str), required = true)]
     pub file_paths: Vec<PathBuf>,
+
+    #[structopt(flatten)]
+    pub transaction_opts: TransactionOpts,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -55,6 +64,9 @@ pub(crate) struct UpgradeCommandOpt {
     /// How many existing migrations do we have to update.
     #[structopt(long = "number", short = "n")]
     pub migrations_number: Option<usize>,
+
+    #[structopt(flatten)]
+    pub transaction_opts: TransactionOpts,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -66,6 +78,9 @@ pub(crate) struct DowngradeCommandOpt {
     /// Rolls back all applied migrations. Ignores --number option.
     #[structopt(long = "all")]
     pub all_migrations: bool,
+
+    #[structopt(flatten)]
+    pub transaction_opts: TransactionOpts,
 }
 
 #[derive(Debug, StructOpt, Clone)]

@@ -1,6 +1,6 @@
 use crate::app::App;
 use crate::database::prelude::*;
-use crate::database::transaction::with_transaction;
+use crate::database::transaction::maybe_with_transaction;
 use crate::database::{DatabaseConnectionManager, MigrationManager};
 use crate::opts::DowngradeCommandOpt;
 use crate::StdResult;
@@ -21,14 +21,28 @@ pub(crate) fn rollback_applied_migrations(app: &App, opts: DowngradeCommandOpt) 
         cmp::min(opts.migrations_number, applied_migrations.len())
     };
 
-    for migration_name in &applied_migrations[..rollback_migrations_number] {
-        if let Some(migration) = migrations.iter().find(|m| m.name() == migration_name) {
-            println!("downgrade {}...", migration.name());
-            with_transaction(conn, &mut |conn| {
-                migration_manager.downgrade(conn, &migration)
-            })?;
-        }
-    }
+    maybe_with_transaction(
+        opts.transaction_opts.single_transaction,
+        conn,
+        &mut |conn| {
+            applied_migrations[..rollback_migrations_number]
+                .iter()
+                .try_for_each(|migration_name| {
+                    if let Some(migration) = migrations.iter().find(|m| m.name() == migration_name)
+                    {
+                        println!("downgrade {}...", migration.name());
+                        maybe_with_transaction(
+                            !opts.transaction_opts.single_transaction,
+                            conn,
+                            &mut |conn| migration_manager.downgrade(conn, &migration),
+                        )
+                    } else {
+                        Ok(())
+                    }
+                })
+                .map_err(From::from)
+        },
+    )?;
 
     Ok(())
 }
