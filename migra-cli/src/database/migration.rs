@@ -3,7 +3,7 @@ use crate::StdResult;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Migration {
     upgrade_sql_file_path: PathBuf,
     downgrade_sql_file_path: PathBuf,

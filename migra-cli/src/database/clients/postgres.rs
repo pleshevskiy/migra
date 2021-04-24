@@ -23,6 +23,13 @@ impl DatabaseStatements for PostgresConnection {
     }
 }
 
+impl SupportsTransactionalDdl for PostgresConnection {
+    #[inline]
+    fn supports_transactional_ddl(&self) -> bool {
+        true
+    }
+}
+
 impl DatabaseConnection for PostgresConnection {
     fn batch_execute(&mut self, query: &str) -> StdResult<()> {
         self.client.batch_execute(query)?;

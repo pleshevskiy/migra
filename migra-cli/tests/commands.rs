@@ -403,13 +403,7 @@ mod upgrade {
                 .arg("-c")
                 .arg(&manifest_path)
                 .arg("down")
-                .assert()
-                .success();
-
-            Command::cargo_bin("migra")?
-                .arg("-c")
-                .arg(&manifest_path)
-                .arg("down")
+                .arg("--all")
                 .assert()
                 .success();
 
@@ -441,6 +435,84 @@ mod upgrade {
             let res = conn.query_drop("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
 
             assert_eq!(res, ());
+
+            Ok(())
+        })?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn partial_applied_invalid_migrations() -> TestResult {
+        fn inner<ValidateFn>(database_name: &'static str, validate: ValidateFn) -> TestResult
+        where
+            ValidateFn: Fn() -> TestResult,
+        {
+            let manifest_path = database_manifest_path(database_name);
+
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("up")
+                .assert()
+                .failure();
+
+            validate()?;
+
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("down")
+                .assert()
+                .success();
+
+            Ok(())
+        }
+
+        #[cfg(feature = "postgres")]
+        inner("postgres_invalid", || {
+            let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+            let articles_res = conn.query("SELECT a.id FROM articles AS a", &[]);
+            let persons_res = conn.query("SELECT p.id FROM persons AS p", &[]);
+
+            assert!(articles_res.is_ok());
+            assert!(persons_res.is_err());
+
+            Ok(())
+        })?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn cannot_applied_invalid_migrations_in_single_transaction() -> TestResult {
+        fn inner<ValidateFn>(database_name: &'static str, validate: ValidateFn) -> TestResult
+        where
+            ValidateFn: Fn() -> TestResult,
+        {
+            let manifest_path = database_manifest_path(database_name);
+
+            Command::cargo_bin("migra")?
+                .arg("-c")
+                .arg(&manifest_path)
+                .arg("up")
+                .arg("--single-transaction")
+                .assert()
+                .failure();
+
+            validate()?;
+
+            Ok(())
+        }
+
+        #[cfg(feature = "postgres")]
+        inner("postgres_invalid", || {
+            let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+            let articles_res = conn.query("SELECT a.id FROM articles AS a", &[]);
+            let persons_res = conn.query("SELECT p.id FROM persons AS p", &[]);
+
+            assert!(articles_res.is_err());
+            assert!(persons_res.is_err());
 
             Ok(())
         })?;
