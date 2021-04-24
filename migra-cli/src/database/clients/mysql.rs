@@ -25,7 +25,7 @@ impl DatabaseStatements for MySqlConnection {
     }
 }
 
-impl SupportsTransactionalDDL for MySqlConnection {}
+impl SupportsTransactionalDdl for MySqlConnection {}
 
 impl DatabaseConnection for MySqlConnection {
     fn batch_execute(&mut self, query: &str) -> StdResult<()> {

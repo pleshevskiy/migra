@@ -9,7 +9,7 @@ pub mod prelude {
     pub use super::adapter::{ToSql, ToSqlParams, TryFromSql};
     pub use super::connection::{
         AnyConnection, DatabaseConnection, DatabaseStatements, OpenDatabaseConnection,
-        SupportsTransactionalDDL,
+        SupportsTransactionalDdl,
     };
     pub use super::migration::ManageMigration;
     pub use super::transaction::ManageTransaction;

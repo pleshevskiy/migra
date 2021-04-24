@@ -23,7 +23,7 @@ impl DatabaseStatements for PostgresConnection {
     }
 }
 
-impl SupportsTransactionalDDL for PostgresConnection {
+impl SupportsTransactionalDdl for PostgresConnection {
     #[inline]
     fn supports_transactional_ddl(&self) -> bool {
         true
