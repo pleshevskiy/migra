@@ -10,7 +10,7 @@ pub struct MySqlConnection {
 
 impl OpenDatabaseConnection for MySqlConnection {
     fn open(connection_string: &str) -> StdResult<Self> {
-        let pool = Pool::new(connection_string)?;
+        let pool = Pool::new_manual(1, 1, connection_string)?;
         let conn = pool.get_conn()?;
         Ok(MySqlConnection { conn })
     }
@@ -24,6 +24,8 @@ impl DatabaseStatements for MySqlConnection {
         )"#
     }
 }
+
+impl SupportsTransactionalDDL for MySqlConnection {}
 
 impl DatabaseConnection for MySqlConnection {
     fn batch_execute(&mut self, query: &str) -> StdResult<()> {

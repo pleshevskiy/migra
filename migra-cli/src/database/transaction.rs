@@ -48,14 +48,14 @@ where
 }
 
 pub fn maybe_with_transaction<TrxFnMut, Res>(
-    with: bool,
+    is_needed: bool,
     conn: &mut AnyConnection,
     trx_fn: &mut TrxFnMut,
 ) -> StdResult<Res>
 where
     TrxFnMut: FnMut(&mut AnyConnection) -> StdResult<Res>,
 {
-    if with {
+    if is_needed && conn.supports_transactional_ddl() {
         with_transaction(conn, trx_fn)
     } else {
         trx_fn(conn)

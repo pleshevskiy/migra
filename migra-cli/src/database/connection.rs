@@ -13,7 +13,14 @@ pub trait DatabaseStatements {
     fn create_migration_table_stmt(&self) -> &'static str;
 }
 
-pub trait DatabaseConnection: DatabaseStatements {
+pub trait SupportsTransactionalDDL {
+    #[inline]
+    fn supports_transactional_ddl(&self) -> bool {
+        false
+    }
+}
+
+pub trait DatabaseConnection: DatabaseStatements + SupportsTransactionalDDL {
     fn batch_execute(&mut self, query: &str) -> StdResult<()>;
 
     fn execute<'b>(&mut self, query: &str, params: ToSqlParams<'b>) -> StdResult<u64>;

@@ -481,22 +481,6 @@ mod upgrade {
             Ok(())
         })?;
 
-        #[cfg(feature = "mysql")]
-        inner("mysql_invalid", || {
-            use mysql::prelude::*;
-
-            let pool = mysql::Pool::new(MYSQL_URL)?;
-            let mut conn = pool.get_conn()?;
-
-            let articles_res = conn.query_drop("SELECT a.id FROM articles AS a");
-            let persons_res = conn.query_drop("SELECT p.id FROM persons AS p");
-
-            assert!(articles_res.is_ok());
-            assert!(persons_res.is_err());
-
-            Ok(())
-        })?;
-
         Ok(())
     }
 
@@ -532,23 +516,6 @@ mod upgrade {
 
             Ok(())
         })?;
-
-        // TODO: Need to investigate how fix single transaction for Mysql
-        // #[cfg(feature = "mysql")]
-        // inner("mysql_invalid", || {
-        //     use mysql::prelude::*;
-
-        //     let pool = mysql::Pool::new(MYSQL_URL)?;
-        //     let mut conn = pool.get_conn()?;
-
-        //     let articles_res = conn.query_drop("SELECT a.id FROM articles AS a");
-        //     let persons_res = conn.query_drop("SELECT p.id FROM persons AS p");
-
-        //     assert!(articles_res.is_err());
-        //     assert!(persons_res.is_err());
-
-        //     Ok(())
-        // })?;
 
         Ok(())
     }
