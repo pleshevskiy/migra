@@ -61,10 +61,15 @@ impl MigrationManager {
 pub fn is_migrations_table_not_found<D: std::fmt::Display>(error: D) -> bool {
     let error_message = error.to_string();
 
-    // Postgres error
-    error_message.contains(r#"relation "migrations" does not exist"#)
-        // MySQL error
-        || error_message.contains("ERROR 1146 (42S02)")
+    fn is_postgres_error(error_message: &str) -> bool {
+        error_message.contains("relation") && error_message.ends_with("does not exist")
+    }
+
+    fn is_mysql_error(error_message: &str) -> bool {
+        error_message.contains("ERROR 1146 (42S02)")
+    }
+
+    is_postgres_error(&error_message) || is_mysql_error(&error_message)
 }
 
 pub trait ManageMigration {
