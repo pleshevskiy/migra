@@ -15,11 +15,14 @@ impl OpenDatabaseConnection for PostgresConnection {
 }
 
 impl DatabaseStatements for PostgresConnection {
-    fn create_migration_table_stmt(&self) -> &'static str {
-        r#"CREATE TABLE IF NOT EXISTS migrations (
-            id      serial      PRIMARY KEY,
-            name    text        NOT NULL UNIQUE
-        )"#
+    fn create_migration_table_stmt(&self, migrations_table_name: &str) -> String {
+        format!(
+            r#"CREATE TABLE IF NOT EXISTS {} (
+                id      serial      PRIMARY KEY,
+                name    text        NOT NULL UNIQUE
+            )"#,
+            migrations_table_name
+        )
     }
 }
 
