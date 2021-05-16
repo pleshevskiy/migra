@@ -5,12 +5,6 @@ use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
 //===========================================================================//
-// Default values for optional manifest variables                            //
-//===========================================================================//
-
-pub(crate) const MIGRA_TOML_FILENAME: &str = "Migra.toml";
-
-//===========================================================================//
 // Internal Config Utils / Macros                                            //
 //===========================================================================//
 
@@ -203,6 +197,8 @@ impl MigrationsConfig {
 //===========================================================================//
 // Main config                                                               //
 //===========================================================================//
+
+pub(crate) const MIGRA_TOML_FILENAME: &str = "Migra.toml";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct Config {
