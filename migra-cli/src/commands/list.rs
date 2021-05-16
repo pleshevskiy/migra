@@ -16,7 +16,7 @@ pub(crate) fn print_migration_lists(app: &App) -> StdResult<()> {
             )?;
             let conn = connection_manager.connection();
 
-            let migration_manager = MigrationManager::new();
+            let migration_manager = MigrationManager::from(&config);
             let applied_migration_names = migration_manager.applied_migration_names(conn)?;
 
             show_applied_migrations(&applied_migration_names);

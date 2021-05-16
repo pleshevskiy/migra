@@ -4,11 +4,31 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
-pub(crate) const MIGRA_TOML_FILENAME: &str = "Migra.toml";
-pub(crate) const DEFAULT_DATABASE_CONNECTION_ENV: &str = "$DATABASE_URL";
+//===========================================================================//
+// Default values for optional manifest variables                            //
+//===========================================================================//
 
-fn default_database_connection_env() -> String {
-    DEFAULT_DATABASE_CONNECTION_ENV.to_owned()
+pub(crate) const MIGRA_TOML_FILENAME: &str = "Migra.toml";
+
+//===========================================================================//
+// Internal Config Utils / Macros                                            //
+//===========================================================================//
+
+fn search_for_directory_containing_file(path: &Path, file_name: &str) -> MigraResult<PathBuf> {
+    let file_path = path.join(file_name);
+    if file_path.is_file() {
+        Ok(path.to_owned())
+    } else {
+        path.parent()
+            .ok_or(Error::RootNotFound)
+            .and_then(|p| search_for_directory_containing_file(p, file_name))
+    }
+}
+
+fn recursive_find_project_root() -> MigraResult<PathBuf> {
+    let current_dir = std::env::current_dir()?;
+
+    search_for_directory_containing_file(&current_dir, MIGRA_TOML_FILENAME)
 }
 
 #[cfg(any(not(feature = "postgres"), not(feature = "mysql")))]
@@ -24,15 +44,12 @@ cargo install migra-cli --features ${database_name}"#,
     };
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Config {
-    #[serde(skip)]
-    manifest_root: PathBuf,
+//===========================================================================//
+// Database config                                                           //
+//===========================================================================//
 
-    root: PathBuf,
-
-    #[serde(default)]
-    pub database: DatabaseConfig,
+fn default_database_connection_env() -> String {
+    String::from("$DATABASE_URL")
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,12 +73,21 @@ impl Default for SupportedDatabaseClient {
     }
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct DatabaseConfig {
     pub client: Option<SupportedDatabaseClient>,
 
     #[serde(default = "default_database_connection_env")]
     pub connection: String,
+}
+
+impl Default for DatabaseConfig {
+    fn default() -> Self {
+        DatabaseConfig {
+            connection: default_database_connection_env(),
+            client: None,
+        }
+    }
 }
 
 impl DatabaseConfig {
@@ -103,34 +129,95 @@ impl DatabaseConfig {
     }
 }
 
+//===========================================================================//
+// Migrations config                                                         //
+//===========================================================================//
+
+fn default_migrations_directory() -> String {
+    String::from("migrations")
+}
+
+fn default_migrations_table_name() -> String {
+    String::from("migrations")
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct MigrationsConfig {
+    #[serde(rename = "directory", default = "default_migrations_directory")]
+    directory: String,
+
+    #[serde(default = "default_migrations_table_name")]
+    table_name: String,
+}
+
+impl Default for MigrationsConfig {
+    fn default() -> Self {
+        MigrationsConfig {
+            directory: default_migrations_directory(),
+            table_name: default_migrations_table_name(),
+        }
+    }
+}
+
+impl MigrationsConfig {
+    pub fn directory(&self) -> String {
+        if let Some(directory_env) = self.directory.strip_prefix("$") {
+            env::var(directory_env).unwrap_or_else(|_| {
+                println!(
+                    "WARN: Cannot read {} variable and use {} directory by default",
+                    directory_env,
+                    default_migrations_directory()
+                );
+                default_migrations_directory()
+            })
+        } else {
+            self.directory.clone()
+        }
+    }
+
+    pub fn table_name(&self) -> String {
+        if let Some(table_name_env) = self.table_name.strip_prefix("$") {
+            env::var(table_name_env).unwrap_or_else(|_| {
+                println!(
+                    "WARN: Cannot read {} variable and use {} table_name by default",
+                    table_name_env,
+                    default_migrations_table_name()
+                );
+                default_migrations_table_name()
+            })
+        } else {
+            self.table_name.clone()
+        }
+    }
+}
+
+//===========================================================================//
+// Main config                                                               //
+//===========================================================================//
+
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct Config {
+    #[serde(skip)]
+    manifest_root: PathBuf,
+
+    root: PathBuf,
+
+    #[serde(default)]
+    pub(crate) database: DatabaseConfig,
+
+    #[serde(default)]
+    pub(crate) migrations: MigrationsConfig,
+}
+
 impl Default for Config {
     fn default() -> Config {
         Config {
             manifest_root: PathBuf::default(),
             root: PathBuf::from("database"),
-            database: DatabaseConfig {
-                connection: default_database_connection_env(),
-                ..Default::default()
-            },
+            database: DatabaseConfig::default(),
+            migrations: MigrationsConfig::default(),
         }
     }
-}
-
-fn search_for_directory_containing_file(path: &Path, file_name: &str) -> MigraResult<PathBuf> {
-    let file_path = path.join(file_name);
-    if file_path.is_file() {
-        Ok(path.to_owned())
-    } else {
-        path.parent()
-            .ok_or(Error::RootNotFound)
-            .and_then(|p| search_for_directory_containing_file(p, file_name))
-    }
-}
-
-fn recursive_find_project_root() -> MigraResult<PathBuf> {
-    let current_dir = std::env::current_dir()?;
-
-    search_for_directory_containing_file(&current_dir, MIGRA_TOML_FILENAME)
 }
 
 impl Config {
@@ -160,15 +247,13 @@ impl Config {
             }
         }
     }
-}
 
-impl Config {
     pub fn directory_path(&self) -> PathBuf {
         self.manifest_root.join(&self.root)
     }
 
     pub fn migration_dir_path(&self) -> PathBuf {
-        self.directory_path().join("migrations")
+        self.directory_path().join(self.migrations.directory())
     }
 
     pub fn migrations(&self) -> MigraResult<Vec<Migration>> {

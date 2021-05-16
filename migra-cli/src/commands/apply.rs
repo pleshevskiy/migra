@@ -10,7 +10,7 @@ pub(crate) fn apply_sql(app: &App, cmd_opts: ApplyCommandOpt) -> StdResult<()> {
     let mut connection_manager = DatabaseConnectionManager::connect(&config.database)?;
     let conn = connection_manager.connection();
 
-    let migration_manager = MigrationManager::new();
+    let migration_manager = MigrationManager::from(&config);
 
     let file_contents = cmd_opts
         .file_paths

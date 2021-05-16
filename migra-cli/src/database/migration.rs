@@ -1,4 +1,5 @@
 use super::connection::AnyConnection;
+use crate::Config;
 use crate::StdResult;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -54,10 +55,10 @@ pub struct MigrationManager {
     migrations_table_name: String,
 }
 
-impl MigrationManager {
-    pub fn new() -> Self {
+impl From<&Config> for MigrationManager {
+    fn from(config: &Config) -> Self {
         MigrationManager {
-            migrations_table_name: String::from("migrations"),
+            migrations_table_name: config.migrations.table_name(),
         }
     }
 }
