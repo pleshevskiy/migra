@@ -6,7 +6,8 @@ use std::fs;
 
 pub(crate) fn make_migration(app: &App, opts: MakeCommandOpt) -> StdResult<()> {
     let config = app.config()?;
-    let now = Local::now().format("%y%m%d%H%M%S");
+    let date_format = config.migrations.date_format();
+    let formatted_current_timestamp = Local::now().format(&date_format);
 
     let migration_name: String = opts
         .migration_name
@@ -18,9 +19,10 @@ pub(crate) fn make_migration(app: &App, opts: MakeCommandOpt) -> StdResult<()> {
         })
         .collect();
 
-    let migration_dir_path = config
-        .migration_dir_path()
-        .join(format!("{}_{}", now, migration_name));
+    let migration_dir_path = config.migration_dir_path().join(format!(
+        "{}_{}",
+        formatted_current_timestamp, migration_name
+    ));
     if !migration_dir_path.exists() {
         fs::create_dir_all(&migration_dir_path)?;
     }

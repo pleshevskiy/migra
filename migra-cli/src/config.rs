@@ -148,6 +148,8 @@ pub(crate) struct MigrationsConfig {
 
     #[serde(default = "default_migrations_table_name")]
     table_name: String,
+
+    date_format: Option<String>,
 }
 
 impl Default for MigrationsConfig {
@@ -155,6 +157,7 @@ impl Default for MigrationsConfig {
         MigrationsConfig {
             directory: default_migrations_directory(),
             table_name: default_migrations_table_name(),
+            date_format: None,
         }
     }
 }
@@ -188,6 +191,12 @@ impl MigrationsConfig {
         } else {
             self.table_name.clone()
         }
+    }
+
+    pub fn date_format(&self) -> String {
+        self.date_format
+            .clone()
+            .unwrap_or_else(|| String::from("%y%m%d%H%M%S"))
     }
 }
 
