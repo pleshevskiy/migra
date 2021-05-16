@@ -10,7 +10,7 @@ pub(crate) fn upgrade_pending_migrations(app: &App, opts: UpgradeCommandOpt) -> 
     let mut connection_manager = DatabaseConnectionManager::connect(&config.database)?;
     let conn = connection_manager.connection();
 
-    let migration_manager = MigrationManager::new();
+    let migration_manager = MigrationManager::from(&config);
 
     let applied_migration_names = migration_manager.applied_migration_names(conn)?;
     let migrations = config.migrations()?;

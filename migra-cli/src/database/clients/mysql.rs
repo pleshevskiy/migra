@@ -17,11 +17,14 @@ impl OpenDatabaseConnection for MySqlConnection {
 }
 
 impl DatabaseStatements for MySqlConnection {
-    fn create_migration_table_stmt(&self) -> &'static str {
-        r#"CREATE TABLE IF NOT EXISTS migrations (
-            id      int             AUTO_INCREMENT PRIMARY KEY,
-            name    varchar(256)    NOT NULL UNIQUE
-        )"#
+    fn create_migration_table_stmt(&self, migrations_table_name: &str) -> String {
+        format!(
+            r#"CREATE TABLE IF NOT EXISTS {} (
+                id      int             AUTO_INCREMENT PRIMARY KEY,
+                name    varchar(256)    NOT NULL UNIQUE
+            )"#,
+            migrations_table_name
+        )
     }
 }
 

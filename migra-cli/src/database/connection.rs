@@ -10,7 +10,7 @@ pub trait OpenDatabaseConnection: Sized {
 }
 
 pub trait DatabaseStatements {
-    fn create_migration_table_stmt(&self) -> &'static str;
+    fn create_migration_table_stmt(&self, migrations_table_name: &str) -> String;
 }
 
 pub trait SupportsTransactionalDdl {

@@ -10,7 +10,7 @@ pub(crate) fn rollback_applied_migrations(app: &App, opts: DowngradeCommandOpt) 
     let config = app.config()?;
     let mut connection_manager = DatabaseConnectionManager::connect(&config.database)?;
     let conn = connection_manager.connection();
-    let migration_manager = MigrationManager::new();
+    let migration_manager = MigrationManager::from(&config);
 
     let applied_migrations = migration_manager.applied_migration_names(conn)?;
     let migrations = config.migrations()?;

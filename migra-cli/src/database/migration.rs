@@ -1,4 +1,5 @@
 use super::connection::AnyConnection;
+use crate::Config;
 use crate::StdResult;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -50,11 +51,21 @@ impl Migration {
 }
 
 #[derive(Debug)]
-pub struct MigrationManager;
+pub struct MigrationManager {
+    migrations_table_name: String,
+}
 
 impl MigrationManager {
-    pub fn new() -> Self {
-        MigrationManager
+    fn new(migrations_table_name: &str) -> Self {
+        MigrationManager {
+            migrations_table_name: migrations_table_name.to_owned(),
+        }
+    }
+}
+
+impl From<&Config> for MigrationManager {
+    fn from(config: &Config) -> Self {
+        MigrationManager::new(&config.migrations.table_name())
     }
 }
 
@@ -109,21 +120,39 @@ impl ManageMigration for MigrationManager {
     }
 
     fn create_migrations_table(&self, conn: &mut AnyConnection) -> StdResult<()> {
-        let stmt = conn.create_migration_table_stmt();
+        let stmt = conn.create_migration_table_stmt(&self.migrations_table_name);
         conn.batch_execute(&stmt)
     }
 
     fn insert_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64> {
-        conn.execute("INSERT INTO migrations (name) VALUES ($1)", &[&name])
+        conn.execute(
+            &format!(
+                "INSERT INTO {} (name) VALUES ($1)",
+                &self.migrations_table_name
+            ),
+            &[&name],
+        )
     }
 
     fn delete_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64> {
-        conn.execute("DELETE FROM migrations WHERE name = $1", &[&name])
+        conn.execute(
+            &format!(
+                "DELETE FROM {} WHERE name = $1",
+                &self.migrations_table_name
+            ),
+            &[&name],
+        )
     }
 
     fn applied_migration_names(&self, conn: &mut AnyConnection) -> StdResult<Vec<String>> {
         let res = conn
-            .query("SELECT name FROM migrations ORDER BY id DESC", &[])
+            .query(
+                &format!(
+                    "SELECT name FROM {} ORDER BY id DESC",
+                    &self.migrations_table_name
+                ),
+                &[],
+            )
             .or_else(|e| {
                 if is_migrations_table_not_found(&e) {
                     Ok(Vec::new())

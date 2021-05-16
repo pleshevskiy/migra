@@ -44,6 +44,8 @@ mod init {
     fn init_manifest_with_default_config() -> TestResult {
         let manifest_path = "Migra.toml";
 
+        fs::remove_file(&manifest_path).ok();
+
         Command::cargo_bin("migra")?
             .arg("init")
             .assert()
@@ -58,6 +60,10 @@ mod init {
 
 [database]
 connection = "$DATABASE_URL"
+
+[migrations]
+directory = "migrations"
+table_name = "migrations"
 "#
         );
 
@@ -69,6 +75,8 @@ connection = "$DATABASE_URL"
     #[test]
     fn init_manifest_in_custom_path() -> TestResult {
         let manifest_path = path_to_file("Migra.toml");
+
+        fs::remove_file(&manifest_path).ok();
 
         Command::cargo_bin("migra")?
             .arg("-c")
@@ -86,6 +94,10 @@ connection = "$DATABASE_URL"
 
 [database]
 connection = "$DATABASE_URL"
+
+[migrations]
+directory = "migrations"
+table_name = "migrations"
 "#
         );
 
