@@ -55,11 +55,17 @@ pub struct MigrationManager {
     migrations_table_name: String,
 }
 
+impl MigrationManager {
+    fn new(migrations_table_name: &str) -> Self {
+        MigrationManager {
+            migrations_table_name: migrations_table_name.to_owned(),
+        }
+    }
+}
+
 impl From<&Config> for MigrationManager {
     fn from(config: &Config) -> Self {
-        MigrationManager {
-            migrations_table_name: config.migrations.table_name(),
-        }
+        MigrationManager::new(&config.migrations.table_name())
     }
 }
 
