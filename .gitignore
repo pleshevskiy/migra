@@ -1,2 +1,5 @@
 target/
 Cargo.lock
+
+# sqlite databases
+*.db

@@ -12,8 +12,6 @@ pub(crate) fn apply_sql(app: &App, cmd_opts: ApplyCommandOpt) -> StdResult<()> {
 
     let migration_manager = MigrationManager::from(&config);
 
-    println!("here");
-
     let file_contents = cmd_opts
         .file_paths
         .clone()
@@ -35,7 +33,6 @@ pub(crate) fn apply_sql(app: &App, cmd_opts: ApplyCommandOpt) -> StdResult<()> {
             file_contents
                 .iter()
                 .try_for_each(|content| {
-                    println!("{}", &content);
                     maybe_with_transaction(
                         !cmd_opts.transaction_opts.single_transaction,
                         conn,

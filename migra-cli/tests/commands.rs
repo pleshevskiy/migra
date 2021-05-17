@@ -476,7 +476,7 @@ mod upgrade {
             inner("sqlite", || {
                 use rusqlite::Connection;
 
-                let conn = Connection::open_in_memory()?;
+                let conn = Connection::open(SQLITE_URL)?;
                 let res =
                     conn.execute_batch("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
                 assert_eq!(res, ());
@@ -682,7 +682,6 @@ mod apply {
 
         #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
         remove_sqlite_db().and_then(|_| {
-            println!("upgrade");
             inner(
                 "sqlite",
                 vec![
@@ -692,8 +691,7 @@ mod apply {
                 || {
                     use rusqlite::Connection;
 
-                    let conn = Connection::open_in_memory()?;
-                    println!("upgraded?");
+                    let conn = Connection::open(SQLITE_URL)?;
                     let res =
                         conn.execute_batch("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
                     assert_eq!(res, ());
@@ -702,7 +700,6 @@ mod apply {
                 },
             )?;
 
-            println!("downgrade");
             inner(
                 "sqlite",
                 vec![
@@ -712,7 +709,7 @@ mod apply {
                 || {
                     use rusqlite::Connection;
 
-                    let conn = Connection::open_in_memory()?;
+                    let conn = Connection::open(SQLITE_URL)?;
                     let res =
                         conn.execute_batch("SELECT p.id, a.id FROM persons AS p, articles AS a");
                     assert!(res.is_err());
