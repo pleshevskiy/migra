@@ -44,6 +44,10 @@ impl DatabaseConnectionManager {
             }
             #[cfg(feature = "mysql")]
             SupportedDatabaseClient::Mysql => Box::new(MySqlConnection::open(&connection_string)?),
+            #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+            SupportedDatabaseClient::Sqlite => {
+                Box::new(SqliteConnection::open(&connection_string)?)
+            }
         };
 
         Ok(DatabaseConnectionManager { conn })

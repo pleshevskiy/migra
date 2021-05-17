@@ -18,6 +18,11 @@ pub fn database_manifest_path<D: std::fmt::Display>(database_name: D) -> String 
 pub const DATABASE_URL_DEFAULT_ENV_NAME: &str = "DATABASE_URL";
 pub const POSTGRES_URL: &str = "postgres://postgres:postgres@localhost:6000/migra_tests";
 pub const MYSQL_URL: &str = "mysql://mysql:mysql@localhost:6001/migra_tests";
+pub const SQLITE_URL: &str = "local.db";
+
+pub fn remove_sqlite_db() -> TestResult {
+    std::fs::remove_file(SQLITE_URL).or(Ok(()))
+}
 
 pub struct Env {
     key: &'static str,
@@ -156,6 +161,9 @@ Pending migrations:
         #[cfg(feature = "mysql")]
         inner(MYSQL_URL)?;
 
+        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        remove_sqlite_db().and_then(|_| inner(SQLITE_URL))?;
+
         Ok(())
     }
 
@@ -231,6 +239,9 @@ Pending migrations:
         #[cfg(feature = "mysql")]
         inner("mysql")?;
 
+        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        remove_sqlite_db().and_then(|_| inner("sqlite"))?;
+
         Ok(())
     }
 
@@ -279,6 +290,9 @@ Pending migrations:
         #[cfg(feature = "mysql")]
         inner("mysql")?;
 
+        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        remove_sqlite_db().and_then(|_| inner("sqlite"))?;
+
         Ok(())
     }
 
@@ -326,6 +340,9 @@ Pending migrations:
 
         #[cfg(feature = "mysql")]
         inner("mysql")?;
+
+        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        remove_sqlite_db().and_then(|_| inner("sqlite"))?;
 
         Ok(())
     }
@@ -386,6 +403,9 @@ mod make {
 
         #[cfg(feature = "mysql")]
         inner("mysql")?;
+
+        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        remove_sqlite_db().and_then(|_| inner("sqlite"))?;
 
         Ok(())
     }
@@ -449,6 +469,20 @@ mod upgrade {
             assert_eq!(res, ());
 
             Ok(())
+        })?;
+
+        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        remove_sqlite_db().and_then(|_| {
+            inner("sqlite", || {
+                use rusqlite::Connection;
+
+                let conn = Connection::open_in_memory()?;
+                let res =
+                    conn.execute_batch("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
+                assert_eq!(res, ());
+
+                Ok(())
+            })
         })?;
 
         Ok(())
@@ -645,6 +679,48 @@ mod apply {
                 )?;
             }
         }
+
+        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        remove_sqlite_db().and_then(|_| {
+            println!("upgrade");
+            inner(
+                "sqlite",
+                vec![
+                    "migrations/210218232851_create_articles/up",
+                    "migrations/210218233414_create_persons/up",
+                ],
+                || {
+                    use rusqlite::Connection;
+
+                    let conn = Connection::open_in_memory()?;
+                    println!("upgraded?");
+                    let res =
+                        conn.execute_batch("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
+                    assert_eq!(res, ());
+
+                    Ok(())
+                },
+            )?;
+
+            println!("downgrade");
+            inner(
+                "sqlite",
+                vec![
+                    "migrations/210218233414_create_persons/down",
+                    "migrations/210218232851_create_articles/down",
+                ],
+                || {
+                    use rusqlite::Connection;
+
+                    let conn = Connection::open_in_memory()?;
+                    let res =
+                        conn.execute_batch("SELECT p.id, a.id FROM persons AS p, articles AS a");
+                    assert!(res.is_err());
+
+                    Ok(())
+                },
+            )
+        })?;
 
         Ok(())
     }

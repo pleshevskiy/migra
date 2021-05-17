@@ -1,0 +1,4 @@
+root = "./sqlite"
+
+[database]
+connection = "local.db"

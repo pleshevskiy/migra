@@ -25,7 +25,7 @@ impl App {
     }
 
     pub fn run_command(&self) -> StdResult<()> {
-        match self.app_opt.command.clone() {
+        match dbg!(self.app_opt.command.clone()) {
             Command::Init => {
                 commands::initialize_migra_manifest(self)?;
             }
