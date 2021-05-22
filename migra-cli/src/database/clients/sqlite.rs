@@ -26,7 +26,12 @@ impl DatabaseStatements for SqliteConnection {
     }
 }
 
-impl SupportsTransactionalDdl for SqliteConnection {}
+impl SupportsTransactionalDdl for SqliteConnection {
+    #[inline]
+    fn supports_transactional_ddl(&self) -> bool {
+        true
+    }
+}
 
 impl DatabaseConnection for SqliteConnection {
     fn batch_execute(&mut self, query: &str) -> StdResult<()> {

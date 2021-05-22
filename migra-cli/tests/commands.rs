@@ -527,6 +527,20 @@ mod upgrade {
             Ok(())
         })?;
 
+        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        inner("sqlite_invalid", || {
+            use rusqlite::Connection;
+
+            let conn = Connection::open(SQLITE_URL)?;
+            let articles_res = conn.execute_batch("SELECT a.id FROM articles AS a");
+            let persons_res = conn.execute_batch("SELECT p.id FROM persons AS p");
+
+            assert!(articles_res.is_ok());
+            assert!(persons_res.is_err());
+
+            Ok(())
+        })?;
+
         Ok(())
     }
 
@@ -556,6 +570,20 @@ mod upgrade {
             let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
             let articles_res = conn.query("SELECT a.id FROM articles AS a", &[]);
             let persons_res = conn.query("SELECT p.id FROM persons AS p", &[]);
+
+            assert!(articles_res.is_err());
+            assert!(persons_res.is_err());
+
+            Ok(())
+        })?;
+
+        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        inner("sqlite_invalid", || {
+            use rusqlite::Connection;
+
+            let conn = Connection::open(SQLITE_URL)?;
+            let articles_res = conn.execute_batch("SELECT a.id FROM articles AS a");
+            let persons_res = conn.execute_batch("SELECT p.id FROM persons AS p");
 
             assert!(articles_res.is_err());
             assert!(persons_res.is_err());

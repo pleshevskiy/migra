@@ -1,0 +1,4 @@
+root = "./sqlite_invalid"
+
+[database]
+connection = "local.db"
