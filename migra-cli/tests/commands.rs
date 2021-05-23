@@ -528,17 +528,19 @@ mod upgrade {
         })?;
 
         #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
-        inner("sqlite_invalid", || {
-            use rusqlite::Connection;
+        remove_sqlite_db().and_then(|_| {
+            inner("sqlite_invalid", || {
+                use rusqlite::Connection;
 
-            let conn = Connection::open(SQLITE_URL)?;
-            let articles_res = conn.execute_batch("SELECT a.id FROM articles AS a");
-            let persons_res = conn.execute_batch("SELECT p.id FROM persons AS p");
+                let conn = Connection::open(SQLITE_URL)?;
+                let articles_res = conn.execute_batch("SELECT a.id FROM articles AS a");
+                let persons_res = conn.execute_batch("SELECT p.id FROM persons AS p");
 
-            assert!(articles_res.is_ok());
-            assert!(persons_res.is_err());
+                assert!(articles_res.is_ok());
+                assert!(persons_res.is_err());
 
-            Ok(())
+                Ok(())
+            })
         })?;
 
         Ok(())
@@ -578,17 +580,19 @@ mod upgrade {
         })?;
 
         #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
-        inner("sqlite_invalid", || {
-            use rusqlite::Connection;
+        remove_sqlite_db().and_then(|_| {
+            inner("sqlite_invalid", || {
+                use rusqlite::Connection;
 
-            let conn = Connection::open(SQLITE_URL)?;
-            let articles_res = conn.execute_batch("SELECT a.id FROM articles AS a");
-            let persons_res = conn.execute_batch("SELECT p.id FROM persons AS p");
+                let conn = Connection::open(SQLITE_URL)?;
+                let articles_res = conn.execute_batch("SELECT a.id FROM articles AS a");
+                let persons_res = conn.execute_batch("SELECT p.id FROM persons AS p");
 
-            assert!(articles_res.is_err());
-            assert!(persons_res.is_err());
+                assert!(articles_res.is_err());
+                assert!(persons_res.is_err());
 
-            Ok(())
+                Ok(())
+            })
         })?;
 
         Ok(())
