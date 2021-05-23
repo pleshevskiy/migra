@@ -11,3 +11,10 @@ cfg_if! {
         pub use self::mysql::*;
     }
 }
+
+cfg_if! {
+    if #[cfg(feature = "sqlite")] {
+        mod sqlite;
+        pub use self::sqlite::*;
+    }
+}

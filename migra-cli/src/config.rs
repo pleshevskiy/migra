@@ -25,7 +25,11 @@ fn recursive_find_project_root() -> MigraResult<PathBuf> {
     search_for_directory_containing_file(&current_dir, MIGRA_TOML_FILENAME)
 }
 
-#[cfg(any(not(feature = "postgres"), not(feature = "mysql")))]
+#[cfg(any(
+    not(feature = "postgres"),
+    not(feature = "mysql"),
+    not(feature = "sqlite")
+))]
 macro_rules! please_install_with {
     (feature $database_name:expr) => {
         panic!(
@@ -53,6 +57,8 @@ pub(crate) enum SupportedDatabaseClient {
     Postgres,
     #[cfg(feature = "mysql")]
     Mysql,
+    #[cfg(feature = "sqlite")]
+    Sqlite,
 }
 
 impl Default for SupportedDatabaseClient {
@@ -62,6 +68,8 @@ impl Default for SupportedDatabaseClient {
                 SupportedDatabaseClient::Postgres
             } else if #[cfg(feature = "mysql")] {
                 SupportedDatabaseClient::Mysql
+            } else if #[cfg(feature = "sqlite")] {
+                SupportedDatabaseClient::Sqlite
             }
         }
     }
@@ -104,6 +112,14 @@ impl DatabaseConfig {
                                 Some(SupportedDatabaseClient::Mysql)
                             } else {
                                 please_install_with!(feature "mysql")
+                            }
+                        }
+                    } else if connection_string.ends_with(".db") {
+                        cfg_if! {
+                            if #[cfg(feature = "sqlite")] {
+                                Some(SupportedDatabaseClient::Sqlite)
+                            } else {
+                                please_install_with!(feature "sqlite")
                             }
                         }
                     } else {

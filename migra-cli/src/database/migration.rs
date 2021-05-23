@@ -80,7 +80,13 @@ pub fn is_migrations_table_not_found<D: std::fmt::Display>(error: D) -> bool {
         error_message.contains("ERROR 1146 (42S02)")
     }
 
-    is_postgres_error(&error_message) || is_mysql_error(&error_message)
+    fn is_sqlite_error(error_message: &str) -> bool {
+        error_message.starts_with("no such table:")
+    }
+
+    is_postgres_error(&error_message)
+        || is_mysql_error(&error_message)
+        || is_sqlite_error(&error_message)
 }
 
 pub trait ManageMigration {
