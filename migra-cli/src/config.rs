@@ -28,7 +28,7 @@ fn recursive_find_project_root() -> MigraResult<PathBuf> {
 #[cfg(any(
     not(feature = "postgres"),
     not(feature = "mysql"),
-    not(any(feature = "sqlite", feature = "rusqlite"))
+    not(feature = "sqlite")
 ))]
 macro_rules! please_install_with {
     (feature $database_name:expr) => {
@@ -57,7 +57,7 @@ pub(crate) enum SupportedDatabaseClient {
     Postgres,
     #[cfg(feature = "mysql")]
     Mysql,
-    #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+    #[cfg(feature = "sqlite")]
     Sqlite,
 }
 
@@ -68,7 +68,7 @@ impl Default for SupportedDatabaseClient {
                 SupportedDatabaseClient::Postgres
             } else if #[cfg(feature = "mysql")] {
                 SupportedDatabaseClient::Mysql
-            } else if #[cfg(any(feature = "sqlite", feature = "rusqlite"))] {
+            } else if #[cfg(feature = "sqlite")] {
                 SupportedDatabaseClient::Sqlite
             }
         }
@@ -116,7 +116,7 @@ impl DatabaseConfig {
                         }
                     } else if connection_string.ends_with(".db") {
                         cfg_if! {
-                            if #[cfg(any(feature = "sqlite", feature = "rusqlite"))] {
+                            if #[cfg(feature = "sqlite")] {
                                 Some(SupportedDatabaseClient::Sqlite)
                             } else {
                                 please_install_with!(feature "sqlite")

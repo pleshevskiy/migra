@@ -161,7 +161,7 @@ Pending migrations:
         #[cfg(feature = "mysql")]
         inner(MYSQL_URL)?;
 
-        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| inner(SQLITE_URL))?;
 
         Ok(())
@@ -239,7 +239,7 @@ Pending migrations:
         #[cfg(feature = "mysql")]
         inner("mysql")?;
 
-        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| inner("sqlite"))?;
 
         Ok(())
@@ -290,7 +290,7 @@ Pending migrations:
         #[cfg(feature = "mysql")]
         inner("mysql")?;
 
-        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| inner("sqlite"))?;
 
         Ok(())
@@ -341,7 +341,7 @@ Pending migrations:
         #[cfg(feature = "mysql")]
         inner("mysql")?;
 
-        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| inner("sqlite"))?;
 
         Ok(())
@@ -404,7 +404,7 @@ mod make {
         #[cfg(feature = "mysql")]
         inner("mysql")?;
 
-        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| inner("sqlite"))?;
 
         Ok(())
@@ -471,7 +471,7 @@ mod upgrade {
             Ok(())
         })?;
 
-        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| {
             inner("sqlite", || {
                 use rusqlite::Connection;
@@ -527,7 +527,7 @@ mod upgrade {
             Ok(())
         })?;
 
-        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| {
             inner("sqlite_invalid", || {
                 use rusqlite::Connection;
@@ -579,7 +579,7 @@ mod upgrade {
             Ok(())
         })?;
 
-        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| {
             inner("sqlite_invalid", || {
                 use rusqlite::Connection;
@@ -712,7 +712,7 @@ mod apply {
             }
         }
 
-        #[cfg(any(feature = "sqlite", feature = "rusqlite"))]
+        #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| {
             inner(
                 "sqlite",

@@ -13,7 +13,7 @@ cfg_if! {
 }
 
 cfg_if! {
-    if #[cfg(any(feature = "sqlite", feature = "rusqlite"))] {
+    if #[cfg(feature = "sqlite")] {
         mod sqlite;
         pub use self::sqlite::*;
     }
