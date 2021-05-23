@@ -52,8 +52,11 @@ For more information about the commands, simply run `migra help`
 
 ### Supported databases
 
-- [x] Postgres
-- [x] MySQL
+| Database | Feature      | Default            |
+|----------|--------------|:------------------:|
+| Postgres | postgres     | :heavy_check_mark: |
+| MySQL    | mysql        | :x:                |
+| Sqlite   | sqlite       | :x:                |
 
 
 ## License
