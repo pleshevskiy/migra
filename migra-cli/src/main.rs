@@ -12,6 +12,8 @@ mod commands;
 mod config;
 mod database;
 mod error;
+pub use error::Error;
+
 mod opts;
 
 use crate::error::StdResult;
