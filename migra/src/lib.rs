@@ -2,11 +2,14 @@
 #![deny(clippy::all, clippy::pedantic)]
 #![allow(clippy::missing_errors_doc)]
 
-mod error;
 pub mod fs;
+pub mod managers;
 pub mod migration;
 
+mod error;
 pub use error::{Error, MigraResult as Result};
+
+pub use migration::Migration;
 
 /*
 
