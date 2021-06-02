@@ -7,7 +7,7 @@ pub mod managers;
 pub mod migration;
 
 mod error;
-pub use error::{Error, MigraResult as Result};
+pub use error::{Error, MigraResult as Result, StdResult};
 
 pub use migration::Migration;
 

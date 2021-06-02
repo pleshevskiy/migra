@@ -13,21 +13,21 @@ readme = "../README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["postgres"]
+postgres = ["migra-clients/postgres"]
+sqlite = ["migra-clients/sqlite"]
+mysql = ["migra-clients/mysql"]
+
 [dependencies]
 migra = { version = "0", path = "../migra" }
+migra-clients = { version = "0", path = "../migra_clients" }
 cfg-if = "1.0"
 structopt = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"
 chrono = "0.4"
 dotenv = { version = "0.15", optional = true }
-postgres = { version = "0.19", optional = true }
-mysql = { version = "20.1", optional = true }
-rusqlite = { version = "0.25", optional = true }
-
-[features]
-default = ["postgres"]
-sqlite = ["rusqlite"]
 
 [badges]
 maintenance = { status = "actively-developed" }

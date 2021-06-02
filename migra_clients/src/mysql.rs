@@ -1,19 +1,20 @@
-use crate::error::MigraResult;
-use migra::managers::{ManageMigrations, ManageTransaction};
+use crate::OpenDatabaseConnection;
+use migra::managers::{BatchExecute, ManageMigrations, ManageTransaction};
 use migra::migration;
 use mysql::prelude::*;
 use mysql::{Pool, PooledConn};
 
+#[derive(Debug)]
 pub struct MySqlClient {
     conn: PooledConn,
     migrations_table_name: String,
 }
 
-impl MySqlClient {
-    fn new(connection_string: &str, migrations_table_name: &str) -> MigraResult<Self> {
+impl OpenDatabaseConnection for MySqlClient {
+    fn manual(connection_string: &str, migrations_table_name: &str) -> migra::Result<Self> {
         let conn = Pool::new_manual(1, 1, connection_string)
             .and_then(|pool| pool.get_conn())
-            .map_err(|_| crate::Error::FailedDatabaseConnection)?;
+            .map_err(|_| migra::Error::FailedDatabaseConnection)?;
 
         Ok(MySqlClient {
             conn,
@@ -22,33 +23,15 @@ impl MySqlClient {
     }
 }
 
-impl ManageTransaction for MySqlClient {
-    fn begin_transaction(&mut self) -> migra::Result<()> {
-        self.conn
-            .query_drop("BEGIN")
-            .map_err(|_| migra::Error::FailedOpenTransaction)
-    }
-
-    fn rollback_transaction(&mut self) -> migra::Result<()> {
-        self.conn
-            .query_drop("ROLLBACK")
-            .map_err(|_| migra::Error::FailedRollbackTransaction)
-    }
-
-    fn commit_transaction(&mut self) -> migra::Result<()> {
-        self.conn
-            .query_drop("COMMIT")
-            .map_err(|_| migra::Error::FailedCommitTransaction)
+impl BatchExecute for MySqlClient {
+    fn batch_execute(&mut self, sql: &str) -> migra::StdResult<()> {
+        self.conn.query_drop(sql).map_err(From::from)
     }
 }
 
-impl ManageMigrations for MySqlClient {
-    fn apply_sql(&mut self, sql_content: &str) -> migra::Result<()> {
-        self.conn
-            .query_drop(sql_content)
-            .map_err(|_| migra::Error::FailedApplySql)
-    }
+impl ManageTransaction for MySqlClient {}
 
+impl ManageMigrations for MySqlClient {
     fn create_migrations_table(&mut self) -> migra::Result<()> {
         let stmt = format!(
             r#"CREATE TABLE IF NOT EXISTS {} (
@@ -58,8 +41,7 @@ impl ManageMigrations for MySqlClient {
             &self.migrations_table_name
         );
 
-        self.conn
-            .query_drop(stmt)
+        self.batch_execute(&stmt)
             .map_err(|_| migra::Error::FailedCreateMigrationsTable)
     }
 
@@ -71,7 +53,7 @@ impl ManageMigrations for MySqlClient {
 
         self.conn
             .exec_first(&stmt, (name,))
-            .map(|res| res.unwrap_or_default())
+            .map(Option::unwrap_or_default)
             .map_err(|_| migra::Error::FailedInsertMigration)
     }
 
@@ -83,7 +65,7 @@ impl ManageMigrations for MySqlClient {
 
         self.conn
             .exec_first(&stmt, (name,))
-            .map(|res| res.unwrap_or_default())
+            .map(Option::unwrap_or_default)
             .map_err(|_| migra::Error::FailedDeleteMigration)
     }
 
