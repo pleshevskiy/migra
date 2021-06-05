@@ -31,33 +31,3 @@ impl ManageTransaction for TransactionManager {
         conn.batch_execute("COMMIT")
     }
 }
-
-pub fn with_transaction<TrxFnMut, Res>(
-    conn: &mut AnyConnection,
-    trx_fn: &mut TrxFnMut,
-) -> StdResult<Res>
-where
-    TrxFnMut: FnMut(&mut AnyConnection) -> StdResult<Res>,
-{
-    let transaction_manager = TransactionManager::new();
-    transaction_manager
-        .begin_transaction(conn)
-        .and_then(|_| trx_fn(conn))
-        .and_then(|res| transaction_manager.commit_transaction(conn).and(Ok(res)))
-        .or_else(|err| transaction_manager.rollback_transaction(conn).and(Err(err)))
-}
-
-pub fn maybe_with_transaction<TrxFnMut, Res>(
-    is_needed: bool,
-    conn: &mut AnyConnection,
-    trx_fn: &mut TrxFnMut,
-) -> StdResult<Res>
-where
-    TrxFnMut: FnMut(&mut AnyConnection) -> StdResult<Res>,
-{
-    if is_needed && conn.supports_transactional_ddl() {
-        with_transaction(conn, trx_fn)
-    } else {
-        trx_fn(conn)
-    }
-}

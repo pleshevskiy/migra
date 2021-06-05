@@ -52,6 +52,36 @@ impl<T: AsRef<Path>> From<Vec<T>> for List {
     }
 }
 
+impl From<Vec<Migration>> for List {
+    fn from(list: Vec<Migration>) -> Self {
+        List { inner: list }
+    }
+}
+
+impl FromIterator<Migration> for List {
+    fn from_iter<I: IntoIterator<Item = Migration>>(iter: I) -> Self {
+        let mut list = List::new();
+
+        for item in iter {
+            list.push(item);
+        }
+
+        list
+    }
+}
+
+impl<'a> FromIterator<&'a Migration> for List {
+    fn from_iter<I: IntoIterator<Item = &'a Migration>>(iter: I) -> Self {
+        let mut list = List::new();
+
+        for item in iter {
+            list.push(item.clone());
+        }
+
+        list
+    }
+}
+
 impl std::ops::Deref for List {
     type Target = Vec<Migration>;
 
@@ -109,30 +139,6 @@ impl List {
         self.iter()
             .filter(|migration| !list.contains(migration))
             .collect()
-    }
-}
-
-impl FromIterator<Migration> for List {
-    fn from_iter<I: IntoIterator<Item = Migration>>(iter: I) -> Self {
-        let mut list = List::new();
-
-        for item in iter {
-            list.push(item);
-        }
-
-        list
-    }
-}
-
-impl<'a> FromIterator<&'a Migration> for List {
-    fn from_iter<I: IntoIterator<Item = &'a Migration>>(iter: I) -> Self {
-        let mut list = List::new();
-
-        for item in iter {
-            list.push(item.clone());
-        }
-
-        list
     }
 }
 

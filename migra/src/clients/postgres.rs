@@ -1,43 +1,44 @@
-use crate::OpenDatabaseConnection;
-use migra::managers::{BatchExecute, ManageMigrations, ManageTransaction};
-use migra::migration;
-use postgres::{Client, NoTls};
+use super::OpenDatabaseConnection;
+use crate::error::{Error, MigraResult, StdResult};
+use crate::managers::{BatchExecute, ManageMigrations, ManageTransaction};
+use crate::migration;
+use postgres::{Client as PostgresClient, NoTls};
 use std::fmt;
 
-pub struct PostgresClient {
-    client: Client,
+pub struct Client {
+    client: PostgresClient,
     migrations_table_name: String,
 }
 
-impl fmt::Debug for PostgresClient {
+impl fmt::Debug for Client {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.debug_struct("PostgresClient")
+        fmt.debug_struct("Client")
             .field("migrations_table_name", &self.migrations_table_name)
             .finish()
     }
 }
 
-impl OpenDatabaseConnection for PostgresClient {
-    fn manual(connection_string: &str, migrations_table_name: &str) -> migra::Result<Self> {
-        let client = Client::connect(connection_string, NoTls)
-            .map_err(|_| migra::Error::FailedDatabaseConnection)?;
-        Ok(PostgresClient {
+impl OpenDatabaseConnection for Client {
+    fn manual(connection_string: &str, migrations_table_name: &str) -> MigraResult<Self> {
+        let client = PostgresClient::connect(connection_string, NoTls)
+            .map_err(|_| Error::FailedDatabaseConnection)?;
+        Ok(Client {
             client,
             migrations_table_name: migrations_table_name.to_owned(),
         })
     }
 }
 
-impl BatchExecute for PostgresClient {
-    fn batch_execute(&mut self, sql: &str) -> migra::StdResult<()> {
+impl BatchExecute for Client {
+    fn batch_execute(&mut self, sql: &str) -> StdResult<()> {
         self.client.batch_execute(sql).map_err(From::from)
     }
 }
 
-impl ManageTransaction for PostgresClient {}
+impl ManageTransaction for Client {}
 
-impl ManageMigrations for PostgresClient {
-    fn create_migrations_table(&mut self) -> migra::Result<()> {
+impl ManageMigrations for Client {
+    fn create_migrations_table(&mut self) -> MigraResult<()> {
         let stmt = format!(
             r#"CREATE TABLE IF NOT EXISTS {} (
                 id      serial      PRIMARY KEY,
@@ -47,10 +48,10 @@ impl ManageMigrations for PostgresClient {
         );
 
         self.batch_execute(&stmt)
-            .map_err(|_| migra::Error::FailedCreateMigrationsTable)
+            .map_err(|_| Error::FailedCreateMigrationsTable)
     }
 
-    fn insert_migration(&mut self, name: &str) -> migra::Result<u64> {
+    fn insert_migration(&mut self, name: &str) -> MigraResult<u64> {
         let stmt = format!(
             "INSERT INTO {} (name) VALUES ($1)",
             &self.migrations_table_name
@@ -58,10 +59,10 @@ impl ManageMigrations for PostgresClient {
 
         self.client
             .execute(stmt.as_str(), &[&name])
-            .map_err(|_| migra::Error::FailedInsertMigration)
+            .map_err(|_| Error::FailedInsertMigration)
     }
 
-    fn delete_migration(&mut self, name: &str) -> migra::Result<u64> {
+    fn delete_migration(&mut self, name: &str) -> MigraResult<u64> {
         let stmt = format!(
             "DELETE FROM {} WHERE name = $1",
             &self.migrations_table_name
@@ -69,10 +70,10 @@ impl ManageMigrations for PostgresClient {
 
         self.client
             .execute(stmt.as_str(), &[&name])
-            .map_err(|_| migra::Error::FailedDeleteMigration)
+            .map_err(|_| Error::FailedDeleteMigration)
     }
 
-    fn applied_migrations(&mut self) -> migra::Result<migration::List> {
+    fn applied_migrations(&mut self) -> MigraResult<migration::List> {
         let stmt = format!("SELECT name FROM {}", &self.migrations_table_name);
 
         self.client
@@ -83,6 +84,8 @@ impl ManageMigrations for PostgresClient {
                     .collect::<Result<Vec<String>, _>>()
             })
             .map(From::from)
-            .map_err(|_| migra::Error::FailedGetAppliedMigrations)
+            .map_err(|_| Error::FailedGetAppliedMigrations)
     }
 }
+
+impl super::Client for Client {}

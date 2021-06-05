@@ -1,6 +1,5 @@
 [workspace]
 members = [
     "migra",
-    "migra_clients",
-    # "migra_cli"
+    "migra_cli",
 ]

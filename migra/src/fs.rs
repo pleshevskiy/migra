@@ -33,3 +33,15 @@ pub fn get_all_migrations(dir_path: &Path) -> MigraResult<migration::List> {
 
     Ok(migration::List::from(file_names))
 }
+
+#[must_use]
+pub fn filter_pending_migrations(
+    all_migrations: &migration::List,
+    applied_migrations: &migration::List,
+) -> migration::List {
+    all_migrations
+        .clone()
+        .iter()
+        .filter(|m| !applied_migrations.contains(m))
+        .collect()
+}

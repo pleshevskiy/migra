@@ -4,7 +4,7 @@ use crate::StdResult;
 use chrono::Local;
 use std::fs;
 
-pub(crate) fn make_migration(app: &App, opts: MakeCommandOpt) -> StdResult<()> {
+pub(crate) fn make_migration(app: &App, opts: &MakeCommandOpt) -> StdResult<()> {
     let config = app.config()?;
     let date_format = config.migrations.date_format();
     let formatted_current_timestamp = Local::now().format(&date_format);

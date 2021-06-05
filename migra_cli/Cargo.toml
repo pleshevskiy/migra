@@ -15,13 +15,12 @@ readme = "../README.md"
 
 [features]
 default = ["postgres"]
-postgres = ["migra-clients/postgres"]
-sqlite = ["migra-clients/sqlite"]
-mysql = ["migra-clients/mysql"]
+postgres = ["migra/postgres"]
+sqlite = ["migra/sqlite"]
+mysql = ["migra/mysql"]
 
 [dependencies]
 migra = { version = "0", path = "../migra" }
-migra-clients = { version = "0", path = "../migra_clients" }
 cfg-if = "1.0"
 structopt = "0.3"
 serde = { version = "1.0", features = ["derive"] }

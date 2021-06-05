@@ -4,18 +4,17 @@ use crate::StdResult;
 use std::path::PathBuf;
 
 pub(crate) fn initialize_migra_manifest(app: &App) -> StdResult<()> {
-    let config_path = app
-        .config_path()
-        .cloned()
-        .map(|mut config_path| {
+    let config_path = app.config_path().cloned().map_or_else(
+        || PathBuf::from(MIGRA_TOML_FILENAME),
+        |mut config_path| {
             let ext = config_path.extension();
             if config_path.is_dir() || ext.is_none() {
                 config_path.push(MIGRA_TOML_FILENAME);
             }
 
             config_path
-        })
-        .unwrap_or_else(|| PathBuf::from(MIGRA_TOML_FILENAME));
+        },
+    );
 
     if config_path.exists() {
         println!("{} already exists", config_path.to_str().unwrap());

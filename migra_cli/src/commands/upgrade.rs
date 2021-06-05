@@ -1,57 +1,60 @@
 use crate::app::App;
-use crate::database::migration::*;
-use crate::database::transaction::maybe_with_transaction;
-use crate::database::DatabaseConnectionManager;
+use crate::client;
+use crate::client::maybe_with_transaction;
 use crate::opts::UpgradeCommandOpt;
 use crate::StdResult;
+use migra::migration;
 
-pub(crate) fn upgrade_pending_migrations(app: &App, opts: UpgradeCommandOpt) -> StdResult<()> {
+pub(crate) fn upgrade_pending_migrations(app: &App, opts: &UpgradeCommandOpt) -> StdResult<()> {
     let config = app.config()?;
-    let mut connection_manager = DatabaseConnectionManager::connect(&config.database)?;
-    let conn = connection_manager.connection();
+    let mut client = client::create(
+        &config.database.client(),
+        &config.database.connection_string()?,
+    )?;
 
-    let migration_manager = MigrationManager::from(&config);
+    let applied_migration_names = client.applied_migrations()?;
+    let all_migrations = migra::fs::get_all_migrations(&config.migration_dir_path())?;
 
-    let applied_migration_names = migration_manager.applied_migration_names(conn)?;
-    let migrations = config.migrations()?;
-
-    let pending_migrations = filter_pending_migrations(migrations, &applied_migration_names);
+    let pending_migrations =
+        migra::fs::filter_pending_migrations(&all_migrations, &applied_migration_names);
     if pending_migrations.is_empty() {
         println!("Up to date");
         return Ok(());
     }
 
-    let migrations: Vec<Migration> = if let Some(migration_name) = opts.migration_name.clone() {
-        let target_migration = pending_migrations
+    let migrations: migration::List = if let Some(migration_name) = opts.migration_name.clone() {
+        let target_migration = (*pending_migrations)
+            .clone()
             .into_iter()
             .find(|m| m.name() == &migration_name);
-        match target_migration {
-            Some(migration) => vec![migration],
-            None => {
-                eprintln!(r#"Cannot find migration with "{}" name"#, migration_name);
-                return Ok(());
-            }
+        if let Some(migration) = target_migration.clone() {
+            vec![migration].into()
+        } else {
+            eprintln!(r#"Cannot find migration with "{}" name"#, migration_name);
+            return Ok(());
         }
     } else {
         let upgrade_migrations_number = opts
             .migrations_number
             .unwrap_or_else(|| pending_migrations.len());
 
-        pending_migrations[..upgrade_migrations_number].to_vec()
+        pending_migrations[..upgrade_migrations_number]
+            .to_vec()
+            .into()
     };
 
     maybe_with_transaction(
         opts.transaction_opts.single_transaction,
-        conn,
-        &mut |conn| {
+        &mut client,
+        &mut |mut client| {
             migrations
                 .iter()
                 .try_for_each(|migration| {
                     print_migration_info(migration);
                     maybe_with_transaction(
                         !opts.transaction_opts.single_transaction,
-                        conn,
-                        &mut |conn| migration_manager.upgrade(conn, migration),
+                        &mut client,
+                        &mut |client| client.apply_upgrade_migration(migration),
                     )
                 })
                 .map_err(From::from)
@@ -61,6 +64,6 @@ pub(crate) fn upgrade_pending_migrations(app: &App, opts: UpgradeCommandOpt) -> 
     Ok(())
 }
 
-fn print_migration_info(migration: &Migration) {
+fn print_migration_info(migration: &migra::Migration) {
     println!("upgrade {}...", migration.name());
 }

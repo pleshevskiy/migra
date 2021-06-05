@@ -1,4 +1,4 @@
-#![deny(clippy::all)]
+#![deny(clippy::all, clippy::pedantic)]
 #![forbid(unsafe_code)]
 
 #[macro_use]
@@ -8,9 +8,9 @@ extern crate cfg_if;
 compile_error!(r#"Either features "postgres" or "mysql" must be enabled for "migra" crate"#);
 
 mod app;
+mod client;
 mod commands;
 mod config;
-mod database;
 mod error;
 pub use error::Error;
 

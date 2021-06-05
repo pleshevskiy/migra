@@ -175,13 +175,3 @@ impl ManageMigration for MigrationManager {
         Ok(applied_migration_names)
     }
 }
-
-pub fn filter_pending_migrations(
-    migrations: Vec<Migration>,
-    applied_migration_names: &[String],
-) -> Vec<Migration> {
-    migrations
-        .into_iter()
-        .filter(|m| !applied_migration_names.contains(m.name()))
-        .collect()
-}

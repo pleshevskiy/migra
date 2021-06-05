@@ -1,19 +1,19 @@
 use crate::app::App;
-use crate::database::prelude::*;
-use crate::database::transaction::maybe_with_transaction;
-use crate::database::{DatabaseConnectionManager, MigrationManager};
+use crate::client;
+use crate::client::maybe_with_transaction;
 use crate::opts::DowngradeCommandOpt;
 use crate::StdResult;
 use std::cmp;
 
-pub(crate) fn rollback_applied_migrations(app: &App, opts: DowngradeCommandOpt) -> StdResult<()> {
+pub(crate) fn rollback_applied_migrations(app: &App, opts: &DowngradeCommandOpt) -> StdResult<()> {
     let config = app.config()?;
-    let mut connection_manager = DatabaseConnectionManager::connect(&config.database)?;
-    let conn = connection_manager.connection();
-    let migration_manager = MigrationManager::from(&config);
+    let mut client = client::create(
+        &config.database.client(),
+        &config.database.connection_string()?,
+    )?;
 
-    let applied_migrations = migration_manager.applied_migration_names(conn)?;
-    let migrations = config.migrations()?;
+    let applied_migrations = client.applied_migrations()?;
+    let all_migrations = migra::fs::get_all_migrations(&config.migration_dir_path())?;
 
     let rollback_migrations_number = if opts.all_migrations {
         applied_migrations.len()
@@ -23,18 +23,17 @@ pub(crate) fn rollback_applied_migrations(app: &App, opts: DowngradeCommandOpt) 
 
     maybe_with_transaction(
         opts.transaction_opts.single_transaction,
-        conn,
-        &mut |conn| {
+        &mut client,
+        &mut |mut client| {
             applied_migrations[..rollback_migrations_number]
                 .iter()
-                .try_for_each(|migration_name| {
-                    if let Some(migration) = migrations.iter().find(|m| m.name() == migration_name)
-                    {
-                        println!("downgrade {}...", migration.name());
+                .try_for_each(|applied_migration| {
+                    if all_migrations.contains(applied_migration) {
+                        println!("downgrade {}...", applied_migration.name());
                         maybe_with_transaction(
                             !opts.transaction_opts.single_transaction,
-                            conn,
-                            &mut |conn| migration_manager.downgrade(conn, &migration),
+                            &mut client,
+                            &mut |client| client.apply_downgrade_migration(&applied_migration),
                         )
                     } else {
                         Ok(())

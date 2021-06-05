@@ -1,65 +1,60 @@
 use crate::app::App;
-use crate::database::migration::filter_pending_migrations;
-use crate::database::prelude::*;
-use crate::database::{DatabaseConnectionManager, Migration, MigrationManager};
+use crate::client;
 use crate::error::{Error, StdResult};
+use migra::migration;
 
 const EM_DASH: char = '—';
 
 pub(crate) fn print_migration_lists(app: &App) -> StdResult<()> {
     let config = app.config()?;
-    let applied_migration_names = match config.database.connection_string() {
+    let applied_migrations = match config.database.connection_string() {
         Ok(ref database_connection_string) => {
-            let mut connection_manager = DatabaseConnectionManager::connect_with_string(
-                &config.database,
-                database_connection_string,
-            )?;
-            let conn = connection_manager.connection();
+            let mut client = client::create(&config.database.client(), database_connection_string)?;
+            let applied_migrations = client.applied_migrations()?;
 
-            let migration_manager = MigrationManager::from(&config);
-            let applied_migration_names = migration_manager.applied_migration_names(conn)?;
+            show_applied_migrations(&applied_migrations);
 
-            show_applied_migrations(&applied_migration_names);
-
-            applied_migration_names
+            applied_migrations
         }
         Err(e) if e == Error::MissedEnvVar(String::new()) => {
             eprintln!("WARNING: {}", e);
             eprintln!("WARNING: No connection to database");
 
-            Vec::new()
+            migration::List::new()
         }
         Err(e) => panic!("{}", e),
     };
 
     println!();
 
+    let all_migrations = migra::fs::get_all_migrations(&config.migration_dir_path())?;
     let pending_migrations =
-        filter_pending_migrations(config.migrations()?, &applied_migration_names);
+        migra::fs::filter_pending_migrations(&all_migrations, &applied_migrations);
+
     show_pending_migrations(&pending_migrations);
 
     Ok(())
 }
 
-fn show_applied_migrations(applied_migration_names: &[String]) {
+fn show_applied_migrations(applied_migrations: &migration::List) {
     println!("Applied migrations:");
-    if applied_migration_names.is_empty() {
+    if applied_migrations.is_empty() {
         println!("{}", EM_DASH);
     } else {
-        applied_migration_names
+        applied_migrations
             .iter()
             .rev()
-            .for_each(|name| println!("{}", name));
+            .for_each(|migration| println!("{}", migration.name()));
     }
 }
 
-fn show_pending_migrations(pending_migrations: &[Migration]) {
+fn show_pending_migrations(pending_migrations: &migration::List) {
     println!("Pending migrations:");
     if pending_migrations.is_empty() {
         println!("{}", EM_DASH);
     } else {
-        pending_migrations.iter().for_each(|m| {
-            println!("{}", m.name());
+        pending_migrations.iter().for_each(|migration| {
+            println!("{}", migration.name());
         });
     }
 }
