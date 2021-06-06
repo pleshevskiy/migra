@@ -1,5 +1,6 @@
 use crate::error::{Error, MigraResult, StdResult};
 use crate::migration::{self, Migration};
+use std::path::Path;
 
 pub trait BatchExecute {
     fn batch_execute(&mut self, sql: &str) -> StdResult<()>;
@@ -33,12 +34,16 @@ pub trait ManageMigrations: BatchExecute {
 
     fn delete_migration(&mut self, name: &str) -> MigraResult<u64>;
 
-    fn applied_migrations(&mut self) -> MigraResult<migration::List>;
+    fn get_applied_migrations(&mut self) -> MigraResult<migration::List>;
+
+    fn get_extended_applied_migrations(&mut self, prefix: &Path) -> MigraResult<migration::List> {
+        self.get_applied_migrations()
+            .map(|migrations| migrations.extend_with_path_prefix(prefix))
+    }
 
     fn apply_upgrade_migration(&mut self, migration: &Migration) -> MigraResult<()> {
         let content = migration.read_upgrade_migration_sql()?;
 
-        self.create_migrations_table()?;
         self.apply_sql(&content)?;
         self.insert_migration(migration.name())?;
 

@@ -12,7 +12,10 @@ pub(crate) fn upgrade_pending_migrations(app: &App, opts: &UpgradeCommandOpt) ->
         &config.database.connection_string()?,
     )?;
 
-    let applied_migration_names = client.applied_migrations()?;
+    client.create_migrations_table()?;
+
+    let applied_migration_names =
+        client.get_extended_applied_migrations(&config.migration_dir_path())?;
     let all_migrations = migra::fs::get_all_migrations(&config.migration_dir_path())?;
 
     let pending_migrations =

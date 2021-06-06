@@ -15,19 +15,35 @@ pub struct Migration {
 impl Migration {
     #[must_use]
     pub fn new(path: &Path) -> Self {
+        Migration::with_name(
+            path,
+            path.file_name()
+                .and_then(std::ffi::OsStr::to_str)
+                .expect("Cannot read migration name"),
+        )
+    }
+
+    #[must_use]
+    pub fn with_name(path: &Path, name: &str) -> Self {
         Migration {
             path: PathBuf::from(path),
-            name: path
-                .file_name()
-                .and_then(std::ffi::OsStr::to_str)
-                .expect("Cannot read migration name")
-                .to_string(),
+            name: name.to_owned(),
         }
+    }
+
+    #[must_use]
+    pub fn path(&self) -> &Path {
+        &self.path
     }
 
     #[must_use]
     pub fn name(&self) -> &String {
         &self.name
+    }
+
+    #[must_use]
+    pub fn extend_with_path_prefix(&self, prefix: &Path) -> Self {
+        Migration::with_name(&prefix.join(self.path()), self.name())
     }
 
     pub fn read_upgrade_migration_sql(&self) -> io::Result<String> {
@@ -136,8 +152,17 @@ impl List {
 
     #[must_use]
     pub fn exclude(&self, list: &List) -> List {
-        self.iter()
-            .filter(|migration| !list.contains(migration))
+        self.inner
+            .iter()
+            .filter(|migration| !list.contains_name(migration.name()))
+            .collect()
+    }
+
+    #[must_use]
+    pub fn extend_with_path_prefix(&self, prefix: &Path) -> Self {
+        self.inner
+            .iter()
+            .map(|m| m.extend_with_path_prefix(prefix))
             .collect()
     }
 }

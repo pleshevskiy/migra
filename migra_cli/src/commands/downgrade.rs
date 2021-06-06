@@ -12,7 +12,10 @@ pub(crate) fn rollback_applied_migrations(app: &App, opts: &DowngradeCommandOpt)
         &config.database.connection_string()?,
     )?;
 
-    let applied_migrations = client.applied_migrations()?;
+    client.create_migrations_table()?;
+
+    let applied_migrations =
+        client.get_extended_applied_migrations(&config.migration_dir_path())?;
     let all_migrations = migra::fs::get_all_migrations(&config.migration_dir_path())?;
 
     let rollback_migrations_number = if opts.all_migrations {
@@ -21,6 +24,8 @@ pub(crate) fn rollback_applied_migrations(app: &App, opts: &DowngradeCommandOpt)
         cmp::min(opts.migrations_number, applied_migrations.len())
     };
 
+    dbg!(&rollback_migrations_number);
+
     maybe_with_transaction(
         opts.transaction_opts.single_transaction,
         &mut client,
@@ -28,7 +33,7 @@ pub(crate) fn rollback_applied_migrations(app: &App, opts: &DowngradeCommandOpt)
             applied_migrations[..rollback_migrations_number]
                 .iter()
                 .try_for_each(|applied_migration| {
-                    if all_migrations.contains(applied_migration) {
+                    if all_migrations.contains_name(applied_migration.name()) {
                         println!("downgrade {}...", applied_migration.name());
                         maybe_with_transaction(
                             !opts.transaction_opts.single_transaction,

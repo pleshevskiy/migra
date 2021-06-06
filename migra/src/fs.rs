@@ -24,14 +24,7 @@ pub fn get_all_migrations(dir_path: &Path) -> MigraResult<migration::List> {
     }
 
     entries.sort();
-
-    let file_names = entries
-        .iter()
-        .filter_map(|path| path.file_name())
-        .filter_map(std::ffi::OsStr::to_str)
-        .collect::<Vec<_>>();
-
-    Ok(migration::List::from(file_names))
+    Ok(migration::List::from(entries))
 }
 
 #[must_use]
@@ -39,9 +32,5 @@ pub fn filter_pending_migrations(
     all_migrations: &migration::List,
     applied_migrations: &migration::List,
 ) -> migration::List {
-    all_migrations
-        .clone()
-        .iter()
-        .filter(|m| !applied_migrations.contains(m))
-        .collect()
+    all_migrations.exclude(applied_migrations)
 }

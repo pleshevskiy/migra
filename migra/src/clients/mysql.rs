@@ -70,8 +70,11 @@ impl ManageMigrations for Client {
             .map_err(|_| Error::FailedDeleteMigration)
     }
 
-    fn applied_migrations(&mut self) -> MigraResult<migration::List> {
-        let stmt = format!("SELECT name FROM {}", &self.migrations_table_name);
+    fn get_applied_migrations(&mut self) -> MigraResult<migration::List> {
+        let stmt = format!(
+            "SELECT name FROM {} ORDER BY id DESC",
+            &self.migrations_table_name
+        );
 
         self.conn
             .query::<String, _>(stmt)

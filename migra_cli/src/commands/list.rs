@@ -10,7 +10,9 @@ pub(crate) fn print_migration_lists(app: &App) -> StdResult<()> {
     let applied_migrations = match config.database.connection_string() {
         Ok(ref database_connection_string) => {
             let mut client = client::create(&config.database.client(), database_connection_string)?;
-            let applied_migrations = client.applied_migrations()?;
+            let applied_migrations = client
+                .get_applied_migrations()
+                .unwrap_or_else(|_| migration::List::new());
 
             show_applied_migrations(&applied_migrations);
 
