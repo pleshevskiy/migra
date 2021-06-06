@@ -28,6 +28,13 @@ toml = "0.5"
 chrono = "0.4"
 dotenv = { version = "0.15", optional = true }
 
+[dev-dependencies]
+assert_cmd = "1"
+predicates = "1"
+client_postgres = { package = "postgres", version = "0.19" }
+client_mysql = { package = "mysql", version = "20.1" }
+client_rusqlite = { package = "rusqlite", version = "0.25" }
+
 [badges]
 maintenance = { status = "actively-developed" }
 
@@ -38,7 +45,3 @@ path = "src/main.rs"
 [[test]]
 name = "integration"
 path = "tests/commands.rs"
-
-[dev-dependencies]
-assert_cmd = "1"
-predicates = "1"

@@ -1,4 +1,4 @@
-use super::connection::AnyConnection;
+use super::client_rusqlite::Connection::AnyConnection;
 use crate::error::StdResult;
 
 pub trait ManageTransaction {

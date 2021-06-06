@@ -1,5 +1,6 @@
 pub use assert_cmd::prelude::*;
 pub use cfg_if::cfg_if;
+use client_mysql::prelude::*;
 pub use predicates::str::contains;
 pub use std::process::Command;
 
@@ -444,7 +445,7 @@ mod upgrade {
 
         #[cfg(feature = "postgres")]
         inner("postgres", || {
-            let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+            let mut conn = client_postgres::Client::connect(POSTGRES_URL, client_postgres::NoTls)?;
             let res = conn.query("SELECT p.id, a.id FROM persons AS p, articles AS a", &[])?;
 
             assert_eq!(
@@ -459,9 +460,7 @@ mod upgrade {
 
         #[cfg(feature = "mysql")]
         inner("mysql", || {
-            use mysql::prelude::*;
-
-            let pool = mysql::Pool::new(MYSQL_URL)?;
+            let pool = client_mysql::Pool::new(MYSQL_URL)?;
             let mut conn = pool.get_conn()?;
 
             let res = conn.query_drop("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
@@ -474,9 +473,7 @@ mod upgrade {
         #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| {
             inner("sqlite", || {
-                use rusqlite::Connection;
-
-                let conn = Connection::open(SQLITE_URL)?;
+                let conn = client_rusqlite::Connection::open(SQLITE_URL)?;
                 let res =
                     conn.execute_batch("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
                 assert_eq!(res, ());
@@ -517,7 +514,7 @@ mod upgrade {
 
         #[cfg(feature = "postgres")]
         inner("postgres_invalid", || {
-            let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+            let mut conn = client_postgres::Client::connect(POSTGRES_URL, client_postgres::NoTls)?;
             let articles_res = conn.query("SELECT a.id FROM articles AS a", &[]);
             let persons_res = conn.query("SELECT p.id FROM persons AS p", &[]);
 
@@ -530,9 +527,7 @@ mod upgrade {
         #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| {
             inner("sqlite_invalid", || {
-                use rusqlite::Connection;
-
-                let conn = Connection::open(SQLITE_URL)?;
+                let conn = client_rusqlite::Connection::open(SQLITE_URL)?;
                 let articles_res = conn.execute_batch("SELECT a.id FROM articles AS a");
                 let persons_res = conn.execute_batch("SELECT p.id FROM persons AS p");
 
@@ -569,7 +564,7 @@ mod upgrade {
 
         #[cfg(feature = "postgres")]
         inner("postgres_invalid", || {
-            let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+            let mut conn = client_postgres::Client::connect(POSTGRES_URL, client_postgres::NoTls)?;
             let articles_res = conn.query("SELECT a.id FROM articles AS a", &[]);
             let persons_res = conn.query("SELECT p.id FROM persons AS p", &[]);
 
@@ -582,9 +577,7 @@ mod upgrade {
         #[cfg(feature = "sqlite")]
         remove_sqlite_db().and_then(|_| {
             inner("sqlite_invalid", || {
-                use rusqlite::Connection;
-
-                let conn = Connection::open(SQLITE_URL)?;
+                let conn = client_rusqlite::Connection::open(SQLITE_URL)?;
                 let articles_res = conn.execute_batch("SELECT a.id FROM articles AS a");
                 let persons_res = conn.execute_batch("SELECT p.id FROM persons AS p");
 
@@ -636,7 +629,7 @@ mod apply {
                         "migrations/210218233414_create_persons/up",
                     ],
                     || {
-                        let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+                        let mut conn = client_postgres::Client::connect(POSTGRES_URL, client_postgres::NoTls)?;
                         let res = conn.query("SELECT p.id, a.id FROM persons AS p, articles AS a", &[])?;
 
                         assert_eq!(
@@ -657,7 +650,7 @@ mod apply {
                         "migrations/210218232851_create_articles/down",
                     ],
                     || {
-                        let mut conn = postgres::Client::connect(POSTGRES_URL, postgres::NoTls)?;
+                        let mut conn = client_postgres::Client::connect(POSTGRES_URL, client_postgres::NoTls)?;
                         let res = conn.query("SELECT p.id, a.id FROM persons AS p, articles AS a", &[]);
 
                         assert!(res.is_err());
@@ -677,9 +670,7 @@ mod apply {
                         "migrations/210218233414_create_persons/up",
                     ],
                     || {
-                        use mysql::prelude::*;
-
-                        let pool = mysql::Pool::new(MYSQL_URL)?;
+                        let pool = client_mysql::Pool::new(MYSQL_URL)?;
                         let mut conn = pool.get_conn()?;
 
                         let res = conn.query_drop("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
@@ -697,9 +688,7 @@ mod apply {
                         "migrations/210218232851_create_articles/down",
                     ],
                     || {
-                        use mysql::prelude::*;
-
-                        let pool = mysql::Pool::new(MYSQL_URL)?;
+                        let pool = client_mysql::Pool::new(MYSQL_URL)?;
                         let mut conn = pool.get_conn()?;
 
                         let res = conn.query_drop("SELECT p.id, a.id FROM persons AS p, articles AS a");
@@ -721,9 +710,7 @@ mod apply {
                     "migrations/210218233414_create_persons/up",
                 ],
                 || {
-                    use rusqlite::Connection;
-
-                    let conn = Connection::open(SQLITE_URL)?;
+                    let conn = client_rusqlite::Connection::open(SQLITE_URL)?;
                     let res =
                         conn.execute_batch("SELECT p.id, a.id FROM persons AS p, articles AS a")?;
                     assert_eq!(res, ());
@@ -739,9 +726,7 @@ mod apply {
                     "migrations/210218232851_create_articles/down",
                 ],
                 || {
-                    use rusqlite::Connection;
-
-                    let conn = Connection::open(SQLITE_URL)?;
+                    let conn = client_rusqlite::Connection::open(SQLITE_URL)?;
                     let res =
                         conn.execute_batch("SELECT p.id, a.id FROM persons AS p, articles AS a");
                     assert!(res.is_err());

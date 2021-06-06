@@ -1,4 +1,4 @@
-use super::connection::AnyConnection;
+use super::client_rusqlite::Connection::AnyConnection;
 use crate::Config;
 use crate::StdResult;
 use std::fs;
