@@ -2,15 +2,14 @@ use crate::app::App;
 use crate::client;
 use crate::client::maybe_with_transaction;
 use crate::opts::UpgradeCommandOpt;
-use crate::StdResult;
 use migra::migration;
 
-pub(crate) fn upgrade_pending_migrations(app: &App, opts: &UpgradeCommandOpt) -> StdResult<()> {
+pub(crate) fn upgrade_pending_migrations(
+    app: &App,
+    opts: &UpgradeCommandOpt,
+) -> migra::StdResult<()> {
     let config = app.config()?;
-    let mut client = client::create(
-        &config.database.client(),
-        &config.database.connection_string()?,
-    )?;
+    let mut client = client::create_from_config(&config)?;
 
     client.create_migrations_table()?;
 

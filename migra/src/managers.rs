@@ -25,7 +25,10 @@ pub trait ManageTransaction: BatchExecute {
 
 pub trait ManageMigrations: BatchExecute {
     fn apply_sql(&mut self, sql: &str) -> MigraResult<()> {
-        self.batch_execute(sql).map_err(|_| Error::FailedApplySql)
+        self.batch_execute(sql).map_err(|err| {
+            dbg!(err);
+            Error::FailedApplySql
+        })
     }
 
     fn create_migrations_table(&mut self) -> MigraResult<()>;

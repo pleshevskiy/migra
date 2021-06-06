@@ -2,15 +2,14 @@ use crate::app::App;
 use crate::client;
 use crate::client::maybe_with_transaction;
 use crate::opts::DowngradeCommandOpt;
-use crate::StdResult;
 use std::cmp;
 
-pub(crate) fn rollback_applied_migrations(app: &App, opts: &DowngradeCommandOpt) -> StdResult<()> {
+pub(crate) fn rollback_applied_migrations(
+    app: &App,
+    opts: &DowngradeCommandOpt,
+) -> migra::StdResult<()> {
     let config = app.config()?;
-    let mut client = client::create(
-        &config.database.client(),
-        &config.database.connection_string()?,
-    )?;
+    let mut client = client::create_from_config(&config)?;
 
     client.create_migrations_table()?;
 

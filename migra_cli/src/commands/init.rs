@@ -1,9 +1,8 @@
 use crate::app::App;
 use crate::config::{Config, MIGRA_TOML_FILENAME};
-use crate::StdResult;
 use std::path::PathBuf;
 
-pub(crate) fn initialize_migra_manifest(app: &App) -> StdResult<()> {
+pub(crate) fn initialize_migra_manifest(app: &App) -> migra::StdResult<()> {
     let config_path = app.config_path().cloned().map_or_else(
         || PathBuf::from(MIGRA_TOML_FILENAME),
         |mut config_path| {

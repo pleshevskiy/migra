@@ -1,5 +1,5 @@
 use crate::commands;
-use crate::error::{MigraResult, StdResult};
+use crate::error::MigraResult;
 use crate::opts::Command;
 use crate::AppOpt;
 use crate::Config;
@@ -24,7 +24,7 @@ impl App {
         Config::read(self.config_path())
     }
 
-    pub fn run_command(&self) -> StdResult<()> {
+    pub fn run_command(&self) -> migra::StdResult<()> {
         match self.app_opt.command.clone() {
             Command::Init => {
                 commands::initialize_migra_manifest(self)?;

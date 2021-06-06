@@ -16,12 +16,11 @@ pub use error::Error;
 
 mod opts;
 
-use crate::error::StdResult;
 use app::App;
 use config::Config;
 use opts::{AppOpt, StructOpt};
 
-fn main() -> StdResult<()> {
+fn main() -> migra::StdResult<()> {
     #[cfg(feature = "dotenv")]
     dotenv::dotenv().ok();
 

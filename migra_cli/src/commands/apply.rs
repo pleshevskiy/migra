@@ -1,13 +1,13 @@
 use crate::app::App;
 use crate::client::maybe_with_transaction;
 use crate::opts::ApplyCommandOpt;
-use crate::StdResult;
 
-pub(crate) fn apply_sql(app: &App, cmd_opts: &ApplyCommandOpt) -> StdResult<()> {
+pub(crate) fn apply_sql(app: &App, cmd_opts: &ApplyCommandOpt) -> migra::StdResult<()> {
     let config = app.config()?;
     let mut client = crate::client::create(
         &config.database.client(),
         &config.database.connection_string()?,
+        &config.migrations.table_name(),
     )?;
 
     let file_contents = cmd_opts

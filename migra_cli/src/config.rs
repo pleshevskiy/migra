@@ -228,7 +228,7 @@ impl MigrationsConfig {
 pub(crate) const MIGRA_TOML_FILENAME: &str = "Migra.toml";
 
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Config {
+pub struct Config {
     #[serde(skip)]
     manifest_root: PathBuf,
 

@@ -39,12 +39,12 @@ impl Migration {
         &self.name
     }
 
-    fn upgrade_sql_content(&self) -> StdResult<String> {
+    fn upgrade_sql_content(&self) -> migra::StdResult<String> {
         let content = fs::read_to_string(&self.upgrade_sql_file_path)?;
         Ok(content)
     }
 
-    fn downgrade_sql_content(&self) -> StdResult<String> {
+    fn downgrade_sql_content(&self) -> migra::StdResult<String> {
         let content = fs::read_to_string(&self.downgrade_sql_file_path)?;
         Ok(content)
     }
@@ -90,17 +90,17 @@ pub fn is_migrations_table_not_found<D: std::fmt::Display>(error: D) -> bool {
 }
 
 pub trait ManageMigration {
-    fn apply_sql(&self, conn: &mut AnyConnection, sql_content: &str) -> StdResult<()>;
+    fn apply_sql(&self, conn: &mut AnyConnection, sql_content: &str) -> migra::StdResult<()>;
 
-    fn create_migrations_table(&self, conn: &mut AnyConnection) -> StdResult<()>;
+    fn create_migrations_table(&self, conn: &mut AnyConnection) -> migra::StdResult<()>;
 
-    fn insert_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64>;
+    fn insert_migration_info(&self, conn: &mut AnyConnection, name: &str) -> migra::StdResult<u64>;
 
-    fn delete_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64>;
+    fn delete_migration_info(&self, conn: &mut AnyConnection, name: &str) -> migra::StdResult<u64>;
 
-    fn applied_migration_names(&self, conn: &mut AnyConnection) -> StdResult<Vec<String>>;
+    fn applied_migration_names(&self, conn: &mut AnyConnection) -> migra::StdResult<Vec<String>>;
 
-    fn upgrade(&self, conn: &mut AnyConnection, migration: &Migration) -> StdResult<()> {
+    fn upgrade(&self, conn: &mut AnyConnection, migration: &Migration) -> migra::StdResult<()> {
         let content = migration.upgrade_sql_content()?;
 
         self.create_migrations_table(conn)?;
@@ -110,7 +110,7 @@ pub trait ManageMigration {
         Ok(())
     }
 
-    fn downgrade(&self, conn: &mut AnyConnection, migration: &Migration) -> StdResult<()> {
+    fn downgrade(&self, conn: &mut AnyConnection, migration: &Migration) -> migra::StdResult<()> {
         let content = migration.downgrade_sql_content()?;
 
         self.apply_sql(conn, &content)?;
@@ -121,16 +121,16 @@ pub trait ManageMigration {
 }
 
 impl ManageMigration for MigrationManager {
-    fn apply_sql(&self, conn: &mut AnyConnection, sql_content: &str) -> StdResult<()> {
+    fn apply_sql(&self, conn: &mut AnyConnection, sql_content: &str) -> migra::StdResult<()> {
         conn.batch_execute(sql_content)
     }
 
-    fn create_migrations_table(&self, conn: &mut AnyConnection) -> StdResult<()> {
+    fn create_migrations_table(&self, conn: &mut AnyConnection) -> migra::StdResult<()> {
         let stmt = conn.create_migration_table_stmt(&self.migrations_table_name);
         conn.batch_execute(&stmt)
     }
 
-    fn insert_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64> {
+    fn insert_migration_info(&self, conn: &mut AnyConnection, name: &str) -> migra::StdResult<u64> {
         conn.execute(
             &format!(
                 "INSERT INTO {} (name) VALUES ($1)",
@@ -140,7 +140,7 @@ impl ManageMigration for MigrationManager {
         )
     }
 
-    fn delete_migration_info(&self, conn: &mut AnyConnection, name: &str) -> StdResult<u64> {
+    fn delete_migration_info(&self, conn: &mut AnyConnection, name: &str) -> migra::StdResult<u64> {
         conn.execute(
             &format!(
                 "DELETE FROM {} WHERE name = $1",
@@ -150,7 +150,7 @@ impl ManageMigration for MigrationManager {
         )
     }
 
-    fn applied_migration_names(&self, conn: &mut AnyConnection) -> StdResult<Vec<String>> {
+    fn applied_migration_names(&self, conn: &mut AnyConnection) -> migra::StdResult<Vec<String>> {
         let res = conn
             .query(
                 &format!(

@@ -1,15 +1,19 @@
 use crate::app::App;
 use crate::client;
-use crate::error::{Error, StdResult};
+use crate::error::Error;
 use migra::migration;
 
 const EM_DASH: char = '—';
 
-pub(crate) fn print_migration_lists(app: &App) -> StdResult<()> {
+pub(crate) fn print_migration_lists(app: &App) -> migra::StdResult<()> {
     let config = app.config()?;
     let applied_migrations = match config.database.connection_string() {
         Ok(ref database_connection_string) => {
-            let mut client = client::create(&config.database.client(), database_connection_string)?;
+            let mut client = client::create(
+                &config.database.client(),
+                database_connection_string,
+                &config.migrations.table_name(),
+            )?;
             let applied_migrations = client
                 .get_applied_migrations()
                 .unwrap_or_else(|_| migration::List::new());
