@@ -27,6 +27,6 @@ fn main() {
     dotenv::dotenv().ok();
 
     if let Err(err) = App::new(AppOpt::from_args()).run_command() {
-        eprintln!("Error: {}", err);
+        panic!("Error: {}", err);
     }
 }
