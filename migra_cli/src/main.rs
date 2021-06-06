@@ -4,8 +4,10 @@
 #[macro_use]
 extern crate cfg_if;
 
-#[cfg(not(any(feature = "postgres", feature = "mysql")))]
-compile_error!(r#"Either features "postgres" or "mysql" must be enabled for "migra" crate"#);
+#[cfg(not(any(feature = "postgres", feature = "mysql", feature = "sqlite")))]
+compile_error!(
+    r#"Either features "postgres", "mysql" or "sqlite" must be enabled for "migra-cli" crate"#
+);
 
 mod app;
 mod client;

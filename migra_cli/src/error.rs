@@ -8,8 +8,6 @@ pub type MigraResult<T> = result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
-    FailedDatabaseConnection,
-
     RootNotFound,
     MissedEnvVar(String),
 
@@ -23,7 +21,6 @@ impl fmt::Display for Error {
             Error::MissedEnvVar(ref name) => {
                 write!(fmt, r#"Missed "{}" environment variable"#, name)
             }
-            Error::FailedDatabaseConnection => fmt.write_str("Failed database connection"),
             Error::Io(ref error) => write!(fmt, "{}", error),
         }
     }
