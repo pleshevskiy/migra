@@ -20,9 +20,11 @@ use app::App;
 use config::Config;
 use opts::{AppOpt, StructOpt};
 
-fn main() -> migra::StdResult<()> {
+fn main() {
     #[cfg(feature = "dotenv")]
     dotenv::dotenv().ok();
 
-    App::new(AppOpt::from_args()).run_command()
+    if let Err(err) = App::new(AppOpt::from_args()).run_command() {
+        eprintln!("Error: {}", err);
+    }
 }

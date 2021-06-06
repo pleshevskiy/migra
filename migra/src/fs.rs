@@ -1,4 +1,4 @@
-use crate::error::MigraResult;
+use crate::errors::MigraResult;
 use crate::migration;
 use crate::migration::{DOWNGRADE_MIGRATION_FILE_NAME, UPGRADE_MIGRATION_FILE_NAME};
 use std::io;

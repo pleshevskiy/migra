@@ -3,7 +3,7 @@
 // #![allow(clippy::module_name_repetitions)]
 // #![allow(clippy::missing_errors_doc)]
 
-use crate::error::MigraResult;
+use crate::errors::MigraResult;
 use crate::managers::{ManageMigrations, ManageTransaction};
 
 pub trait OpenDatabaseConnection

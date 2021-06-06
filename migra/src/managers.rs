@@ -1,4 +1,4 @@
-use crate::error::{Error, MigraResult, StdResult};
+use crate::errors::{DbKind, Error, MigraResult, StdResult};
 use crate::migration::{self, Migration};
 use std::path::Path;
 
@@ -9,26 +9,24 @@ pub trait BatchExecute {
 pub trait ManageTransaction: BatchExecute {
     fn begin_transaction(&mut self) -> MigraResult<()> {
         self.batch_execute("BEGIN")
-            .map_err(|_| Error::FailedOpenTransaction)
+            .map_err(|err| Error::db(err, DbKind::OpenTransaction))
     }
 
     fn rollback_transaction(&mut self) -> MigraResult<()> {
         self.batch_execute("ROLLBACK")
-            .map_err(|_| Error::FailedRollbackTransaction)
+            .map_err(|err| Error::db(err, DbKind::RollbackTransaction))
     }
 
     fn commit_transaction(&mut self) -> MigraResult<()> {
         self.batch_execute("COMMIT")
-            .map_err(|_| Error::FailedCommitTransaction)
+            .map_err(|err| Error::db(err, DbKind::CommitTransaction))
     }
 }
 
 pub trait ManageMigrations: BatchExecute {
     fn apply_sql(&mut self, sql: &str) -> MigraResult<()> {
-        self.batch_execute(sql).map_err(|err| {
-            dbg!(err);
-            Error::FailedApplySql
-        })
+        self.batch_execute(sql)
+            .map_err(|err| Error::db(err, DbKind::ApplySql))
     }
 
     fn create_migrations_table(&mut self) -> MigraResult<()>;

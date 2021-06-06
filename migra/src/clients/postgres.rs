@@ -1,5 +1,5 @@
 use super::OpenDatabaseConnection;
-use crate::error::{Error, MigraResult, StdResult};
+use crate::errors::{DbKind, Error, MigraResult, StdResult};
 use crate::managers::{BatchExecute, ManageMigrations, ManageTransaction};
 use crate::migration;
 use postgres::{Client as PostgresClient, NoTls};
@@ -21,7 +21,7 @@ impl fmt::Debug for Client {
 impl OpenDatabaseConnection for Client {
     fn manual(connection_string: &str, migrations_table_name: &str) -> MigraResult<Self> {
         let client = PostgresClient::connect(connection_string, NoTls)
-            .map_err(|_| Error::FailedDatabaseConnection)?;
+            .map_err(|err| Error::db(err.into(), DbKind::DatabaseConnection))?;
         Ok(Client {
             client,
             migrations_table_name: migrations_table_name.to_owned(),
@@ -48,7 +48,7 @@ impl ManageMigrations for Client {
         );
 
         self.batch_execute(&stmt)
-            .map_err(|_| Error::FailedCreateMigrationsTable)
+            .map_err(|err| Error::db(err, DbKind::CreateMigrationsTable))
     }
 
     fn insert_migration(&mut self, name: &str) -> MigraResult<u64> {
@@ -59,7 +59,7 @@ impl ManageMigrations for Client {
 
         self.client
             .execute(stmt.as_str(), &[&name])
-            .map_err(|_| Error::FailedInsertMigration)
+            .map_err(|err| Error::db(err.into(), DbKind::InsertMigration))
     }
 
     fn delete_migration(&mut self, name: &str) -> MigraResult<u64> {
@@ -70,7 +70,7 @@ impl ManageMigrations for Client {
 
         self.client
             .execute(stmt.as_str(), &[&name])
-            .map_err(|_| Error::FailedDeleteMigration)
+            .map_err(|err| Error::db(err.into(), DbKind::DeleteMigration))
     }
 
     fn get_applied_migrations(&mut self) -> MigraResult<migration::List> {
@@ -87,7 +87,7 @@ impl ManageMigrations for Client {
                     .collect::<Result<Vec<String>, _>>()
             })
             .map(From::from)
-            .map_err(|_| Error::FailedGetAppliedMigrations)
+            .map_err(|err| Error::db(err.into(), DbKind::GetAppliedMigrations))
     }
 }
 

@@ -1,5 +1,5 @@
 use super::OpenDatabaseConnection;
-use crate::error::{Error, MigraResult, StdResult};
+use crate::errors::{DbKind, Error, MigraResult, StdResult};
 use crate::managers::{BatchExecute, ManageMigrations, ManageTransaction};
 use crate::migration;
 use mysql::prelude::*;
@@ -15,7 +15,7 @@ impl OpenDatabaseConnection for Client {
     fn manual(connection_string: &str, migrations_table_name: &str) -> MigraResult<Self> {
         let conn = Pool::new_manual(1, 1, connection_string)
             .and_then(|pool| pool.get_conn())
-            .map_err(|_| Error::FailedDatabaseConnection)?;
+            .map_err(|err| Error::db(err.into(), DbKind::DatabaseConnection))?;
 
         Ok(Client {
             conn,
@@ -43,31 +43,28 @@ impl ManageMigrations for Client {
         );
 
         self.batch_execute(&stmt)
-            .map_err(|_| Error::FailedCreateMigrationsTable)
+            .map_err(|err| Error::db(err, DbKind::CreateMigrationsTable))
     }
 
     fn insert_migration(&mut self, name: &str) -> MigraResult<u64> {
         let stmt = format!(
-            "INSERT INTO {} (name) VALUES ($1)",
+            "INSERT INTO {} (name) VALUES (?)",
             &self.migrations_table_name
         );
 
         self.conn
             .exec_first(&stmt, (name,))
             .map(Option::unwrap_or_default)
-            .map_err(|_| Error::FailedInsertMigration)
+            .map_err(|err| Error::db(err.into(), DbKind::InsertMigration))
     }
 
     fn delete_migration(&mut self, name: &str) -> MigraResult<u64> {
-        let stmt = format!(
-            "DELETE FROM {} WHERE name = $1",
-            &self.migrations_table_name
-        );
+        let stmt = format!("DELETE FROM {} WHERE name = ?", &self.migrations_table_name);
 
         self.conn
             .exec_first(&stmt, (name,))
             .map(Option::unwrap_or_default)
-            .map_err(|_| Error::FailedDeleteMigration)
+            .map_err(|err| Error::db(err.into(), DbKind::DeleteMigration))
     }
 
     fn get_applied_migrations(&mut self) -> MigraResult<migration::List> {
@@ -79,7 +76,7 @@ impl ManageMigrations for Client {
         self.conn
             .query::<String, _>(stmt)
             .map(From::from)
-            .map_err(|_| Error::FailedGetAppliedMigrations)
+            .map_err(|err| Error::db(err.into(), DbKind::GetAppliedMigrations))
     }
 }
 

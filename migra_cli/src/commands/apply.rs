@@ -4,11 +4,7 @@ use crate::opts::ApplyCommandOpt;
 
 pub(crate) fn apply_sql(app: &App, cmd_opts: &ApplyCommandOpt) -> migra::StdResult<()> {
     let config = app.config()?;
-    let mut client = crate::client::create(
-        &config.database.client(),
-        &config.database.connection_string()?,
-        &config.migrations.table_name(),
-    )?;
+    let mut client = crate::client::create_from_config(&config)?;
 
     let file_contents = cmd_opts
         .file_paths

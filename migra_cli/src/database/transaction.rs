@@ -1,5 +1,5 @@
 use super::client_rusqlite::Connection::AnyConnection;
-use crate::error::StdResult;
+use crate::errors::StdResult;
 
 pub trait ManageTransaction {
     fn begin_transaction(&self, conn: &mut AnyConnection) -> migra::StdResult<()>;
