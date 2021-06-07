@@ -1,6 +1,5 @@
 use crate::app::App;
-use crate::client;
-use crate::client::maybe_with_transaction;
+use crate::database;
 use crate::opts::UpgradeCommandOpt;
 use migra::migration;
 
@@ -9,7 +8,7 @@ pub(crate) fn upgrade_pending_migrations(
     opts: &UpgradeCommandOpt,
 ) -> migra::StdResult<()> {
     let config = app.config()?;
-    let mut client = client::create_from_config(&config)?;
+    let mut client = database::create_client_from_config(&config)?;
 
     client.create_migrations_table()?;
 
@@ -45,7 +44,7 @@ pub(crate) fn upgrade_pending_migrations(
             .into()
     };
 
-    maybe_with_transaction(
+    database::maybe_with_transaction(
         opts.transaction_opts.single_transaction,
         &mut client,
         &mut |mut client| {
@@ -53,7 +52,7 @@ pub(crate) fn upgrade_pending_migrations(
                 .iter()
                 .try_for_each(|migration| {
                     print_migration_info(migration);
-                    maybe_with_transaction(
+                    database::maybe_with_transaction(
                         !opts.transaction_opts.single_transaction,
                         &mut client,
                         &mut |client| client.apply_upgrade_migration(migration),

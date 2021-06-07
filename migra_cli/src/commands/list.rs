@@ -1,5 +1,5 @@
 use crate::app::App;
-use crate::client;
+use crate::database;
 use crate::error::Error;
 use migra::migration;
 
@@ -9,7 +9,7 @@ pub(crate) fn print_migration_lists(app: &App) -> migra::StdResult<()> {
     let config = app.config()?;
     let applied_migrations = match config.database.connection_string() {
         Ok(ref database_connection_string) => {
-            let mut client = client::create(
+            let mut client = database::create_client(
                 &config.database.client(),
                 database_connection_string,
                 &config.migrations.table_name(),

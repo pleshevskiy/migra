@@ -1,10 +1,10 @@
 use crate::app::App;
-use crate::client::maybe_with_transaction;
+use crate::database;
 use crate::opts::ApplyCommandOpt;
 
 pub(crate) fn apply_sql(app: &App, cmd_opts: &ApplyCommandOpt) -> migra::StdResult<()> {
     let config = app.config()?;
-    let mut client = crate::client::create_from_config(&config)?;
+    let mut client = database::create_client_from_config(&config)?;
 
     let file_contents = cmd_opts
         .file_paths
@@ -20,14 +20,14 @@ pub(crate) fn apply_sql(app: &App, cmd_opts: &ApplyCommandOpt) -> migra::StdResu
         .map(std::fs::read_to_string)
         .collect::<Result<Vec<_>, _>>()?;
 
-    maybe_with_transaction(
+    database::maybe_with_transaction(
         cmd_opts.transaction_opts.single_transaction,
         &mut client,
         &mut |mut client| {
             file_contents
                 .iter()
                 .try_for_each(|content| {
-                    maybe_with_transaction(
+                    database::maybe_with_transaction(
                         !cmd_opts.transaction_opts.single_transaction,
                         &mut client,
                         &mut |client| client.apply_sql(content),

@@ -10,9 +10,9 @@ compile_error!(
 );
 
 mod app;
-mod client;
 mod commands;
 mod config;
+mod database;
 mod error;
 pub use error::Error;
 

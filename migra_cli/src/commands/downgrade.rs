@@ -1,6 +1,5 @@
 use crate::app::App;
-use crate::client;
-use crate::client::maybe_with_transaction;
+use crate::database;
 use crate::opts::DowngradeCommandOpt;
 use std::cmp;
 
@@ -9,7 +8,7 @@ pub(crate) fn rollback_applied_migrations(
     opts: &DowngradeCommandOpt,
 ) -> migra::StdResult<()> {
     let config = app.config()?;
-    let mut client = client::create_from_config(&config)?;
+    let mut client = database::create_client_from_config(&config)?;
 
     client.create_migrations_table()?;
 
@@ -25,7 +24,7 @@ pub(crate) fn rollback_applied_migrations(
 
     dbg!(&rollback_migrations_number);
 
-    maybe_with_transaction(
+    database::maybe_with_transaction(
         opts.transaction_opts.single_transaction,
         &mut client,
         &mut |mut client| {
@@ -34,7 +33,7 @@ pub(crate) fn rollback_applied_migrations(
                 .try_for_each(|applied_migration| {
                     if all_migrations.contains_name(applied_migration.name()) {
                         println!("downgrade {}...", applied_migration.name());
-                        maybe_with_transaction(
+                        database::maybe_with_transaction(
                             !opts.transaction_opts.single_transaction,
                             &mut client,
                             &mut |client| client.apply_downgrade_migration(&applied_migration),
