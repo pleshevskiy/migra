@@ -10,6 +10,13 @@ pub struct Client {
     migrations_table_name: String,
 }
 
+impl Client {
+    #[must_use]
+    pub fn conn(&self) -> &Connection {
+        &self.conn
+    }
+}
+
 impl OpenDatabaseConnection for Client {
     fn manual(connection_string: &str, migrations_table_name: &str) -> MigraResult<Self> {
         let conn = Connection::open(connection_string)

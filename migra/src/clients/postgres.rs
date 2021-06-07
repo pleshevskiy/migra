@@ -6,8 +6,15 @@ use postgres::{Client as PostgresClient, NoTls};
 use std::fmt;
 
 pub struct Client {
-    client: PostgresClient,
+    conn: PostgresClient,
     migrations_table_name: String,
+}
+
+impl Client {
+    #[must_use]
+    pub fn conn(&self) -> &PostgresClient {
+        &self.conn
+    }
 }
 
 impl fmt::Debug for Client {
@@ -20,10 +27,10 @@ impl fmt::Debug for Client {
 
 impl OpenDatabaseConnection for Client {
     fn manual(connection_string: &str, migrations_table_name: &str) -> MigraResult<Self> {
-        let client = PostgresClient::connect(connection_string, NoTls)
+        let conn = PostgresClient::connect(connection_string, NoTls)
             .map_err(|err| Error::db(err.into(), DbKind::DatabaseConnection))?;
         Ok(Client {
-            client,
+            conn,
             migrations_table_name: migrations_table_name.to_owned(),
         })
     }
@@ -31,7 +38,7 @@ impl OpenDatabaseConnection for Client {
 
 impl BatchExecute for Client {
     fn batch_execute(&mut self, sql: &str) -> StdResult<()> {
-        self.client.batch_execute(sql).map_err(From::from)
+        self.conn.batch_execute(sql).map_err(From::from)
     }
 }
 
@@ -57,7 +64,7 @@ impl ManageMigrations for Client {
             &self.migrations_table_name
         );
 
-        self.client
+        self.conn
             .execute(stmt.as_str(), &[&name])
             .map_err(|err| Error::db(err.into(), DbKind::InsertMigration))
     }
@@ -68,7 +75,7 @@ impl ManageMigrations for Client {
             &self.migrations_table_name
         );
 
-        self.client
+        self.conn
             .execute(stmt.as_str(), &[&name])
             .map_err(|err| Error::db(err.into(), DbKind::DeleteMigration))
     }
@@ -79,7 +86,7 @@ impl ManageMigrations for Client {
             &self.migrations_table_name
         );
 
-        self.client
+        self.conn
             .query(stmt.as_str(), &[])
             .and_then(|res| {
                 res.into_iter()

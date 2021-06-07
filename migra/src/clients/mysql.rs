@@ -11,6 +11,13 @@ pub struct Client {
     migrations_table_name: String,
 }
 
+impl Client {
+    #[must_use]
+    pub fn conn(&self) -> &PooledConn {
+        &self.conn
+    }
+}
+
 impl OpenDatabaseConnection for Client {
     fn manual(connection_string: &str, migrations_table_name: &str) -> MigraResult<Self> {
         let conn = Pool::new_manual(1, 1, connection_string)
