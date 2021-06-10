@@ -53,7 +53,7 @@ pub(crate) fn upgrade_pending_migrations(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    database::maybe_with_transaction(
+    migra::maybe_with_transaction(
         opts.transaction_opts.single_transaction,
         &mut client,
         &mut |mut client| {
@@ -61,7 +61,7 @@ pub(crate) fn upgrade_pending_migrations(
                 .iter()
                 .try_for_each(|(migration_name, content)| {
                     println!("upgrade {}...", migration_name);
-                    database::maybe_with_transaction(
+                    migra::maybe_with_transaction(
                         !opts.transaction_opts.single_transaction,
                         &mut client,
                         &mut |client| client.run_upgrade_migration(migration_name, &content),

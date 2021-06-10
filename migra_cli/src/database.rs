@@ -42,32 +42,3 @@ pub fn create_client_from_config(config: &Config) -> migra::StdResult<AnyClient>
     )
     .map_err(From::from)
 }
-
-pub fn with_transaction<TrxFnMut, Res>(
-    client: &mut AnyClient,
-    trx_fn: &mut TrxFnMut,
-) -> migra::Result<Res>
-where
-    TrxFnMut: FnMut(&mut AnyClient) -> migra::Result<Res>,
-{
-    client
-        .begin_transaction()
-        .and_then(|_| trx_fn(client))
-        .and_then(|res| client.commit_transaction().and(Ok(res)))
-        .or_else(|err| client.rollback_transaction().and(Err(err)))
-}
-
-pub fn maybe_with_transaction<TrxFnMut, Res>(
-    is_needed: bool,
-    client: &mut AnyClient,
-    trx_fn: &mut TrxFnMut,
-) -> migra::Result<Res>
-where
-    TrxFnMut: FnMut(&mut AnyClient) -> migra::Result<Res>,
-{
-    if is_needed {
-        with_transaction(client, trx_fn)
-    } else {
-        trx_fn(client)
-    }
-}

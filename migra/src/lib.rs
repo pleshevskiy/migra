@@ -4,11 +4,11 @@
 
 pub mod clients;
 
+mod errors;
 pub mod fs;
 pub mod managers;
 pub mod migration;
 
-mod errors;
+pub use clients::{maybe_with_transaction, with_transaction};
 pub use errors::{Error, MigraResult as Result, StdResult};
-
 pub use migration::Migration;
