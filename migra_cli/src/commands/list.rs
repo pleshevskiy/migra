@@ -14,9 +14,10 @@ pub(crate) fn print_migration_lists(app: &App) -> migra::StdResult<()> {
                 database_connection_string,
                 &config.migrations.table_name(),
             )?;
-            let applied_migrations = client
-                .get_applied_migrations()
-                .unwrap_or_else(|_| migration::List::new());
+            let applied_migrations = client.get_applied_migrations().unwrap_or_else(|err| {
+                dbg!(err);
+                migration::List::new()
+            });
 
             show_applied_migrations(&applied_migrations);
 

@@ -1,13 +1,11 @@
 use crate::errors::MigraResult;
 use crate::migration;
-use crate::migration::{DOWNGRADE_MIGRATION_FILE_NAME, UPGRADE_MIGRATION_FILE_NAME};
 use std::io;
 use std::path::Path;
 
 #[must_use]
 pub fn is_migration_dir(path: &Path) -> bool {
-    path.join(UPGRADE_MIGRATION_FILE_NAME).exists()
-        && path.join(DOWNGRADE_MIGRATION_FILE_NAME).exists()
+    path.join("up.sql").exists() && path.join("down.sql").exists()
 }
 
 pub fn get_all_migrations(dir_path: &Path) -> MigraResult<migration::List> {

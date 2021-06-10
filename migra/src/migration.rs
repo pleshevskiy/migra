@@ -1,57 +1,23 @@
-use std::fs;
-use std::io;
+use crate::errors::MigraResult;
+use crate::managers::ManageMigrations;
 use std::iter::FromIterator;
-use std::path::{Path, PathBuf};
-
-pub(crate) const UPGRADE_MIGRATION_FILE_NAME: &str = "up.sql";
-pub(crate) const DOWNGRADE_MIGRATION_FILE_NAME: &str = "down.sql";
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Migration {
-    path: PathBuf,
     name: String,
 }
 
 impl Migration {
     #[must_use]
-    pub fn new(path: &Path) -> Self {
-        Migration::with_name(
-            path,
-            path.file_name()
-                .and_then(std::ffi::OsStr::to_str)
-                .expect("Cannot read migration name"),
-        )
-    }
-
-    #[must_use]
-    pub fn with_name(path: &Path, name: &str) -> Self {
+    pub fn new(name: &str) -> Self {
         Migration {
-            path: PathBuf::from(path),
             name: name.to_owned(),
         }
     }
 
     #[must_use]
-    pub fn path(&self) -> &Path {
-        &self.path
-    }
-
-    #[must_use]
     pub fn name(&self) -> &String {
         &self.name
-    }
-
-    #[must_use]
-    pub fn extend_with_path_prefix(&self, prefix: &Path) -> Self {
-        Migration::with_name(&prefix.join(self.path()), self.name())
-    }
-
-    pub fn read_upgrade_migration_sql(&self) -> io::Result<String> {
-        fs::read_to_string(self.path.join(UPGRADE_MIGRATION_FILE_NAME))
-    }
-
-    pub fn read_downgrade_migration_sql(&self) -> io::Result<String> {
-        fs::read_to_string(self.path.join(DOWNGRADE_MIGRATION_FILE_NAME))
     }
 }
 
@@ -60,10 +26,19 @@ pub struct List {
     inner: Vec<Migration>,
 }
 
-impl<T: AsRef<Path>> From<Vec<T>> for List {
+impl<T: AsRef<std::path::Path>> From<Vec<T>> for List {
     fn from(list: Vec<T>) -> Self {
         List {
-            inner: list.iter().map(AsRef::as_ref).map(Migration::new).collect(),
+            inner: list
+                .iter()
+                .map(AsRef::as_ref)
+                .map(|path| {
+                    path.file_name()
+                        .and_then(std::ffi::OsStr::to_str)
+                        .expect("Cannot read migration name")
+                })
+                .map(Migration::new)
+                .collect(),
         }
     }
 }
@@ -116,8 +91,8 @@ impl List {
         self.inner.push(migration)
     }
 
-    pub fn push_name<P: AsRef<Path>>(&mut self, path: P) {
-        self.inner.push(Migration::new(path.as_ref()))
+    pub fn push_name(&mut self, name: &str) {
+        self.inner.push(Migration::new(name))
     }
 
     #[must_use]
@@ -133,24 +108,6 @@ impl List {
     }
 
     #[must_use]
-    pub fn maybe_contains<'a>(&self, name: &'a str) -> Option<&'a str> {
-        if self.contains_name(name) {
-            Some(name)
-        } else {
-            None
-        }
-    }
-
-    #[must_use]
-    pub fn maybe_missed<'a>(&self, name: &'a str) -> Option<&'a str> {
-        if self.contains_name(name) {
-            None
-        } else {
-            Some(name)
-        }
-    }
-
-    #[must_use]
     pub fn exclude(&self, list: &List) -> List {
         self.inner
             .iter()
@@ -158,12 +115,36 @@ impl List {
             .collect()
     }
 
-    #[must_use]
-    pub fn extend_with_path_prefix(&self, prefix: &Path) -> Self {
-        self.inner
-            .iter()
-            .map(|m| m.extend_with_path_prefix(prefix))
-            .collect()
+    pub fn should_run_upgrade_migration(
+        &mut self,
+        client: &mut dyn ManageMigrations,
+        name: &str,
+        content: &str,
+    ) -> MigraResult<bool> {
+        let is_missed = !self.contains_name(name);
+
+        if is_missed {
+            client.run_upgrade_migration(name, content)?;
+            self.push_name(name);
+        }
+
+        Ok(is_missed)
+    }
+
+    pub fn should_run_downgrade_migration(
+        &mut self,
+        client: &mut dyn ManageMigrations,
+        name: &str,
+        content: &str,
+    ) -> MigraResult<bool> {
+        let is_latest = self.inner.last() == Some(&Migration::new(name));
+
+        if is_latest {
+            client.run_downgrade_migration(name, content)?;
+            self.inner.pop();
+        }
+
+        Ok(is_latest)
     }
 }
 
@@ -178,10 +159,10 @@ mod tests {
     fn push_migration_to_list() {
         let mut list = List::new();
 
-        list.push(Migration::new(&PathBuf::from(FIRST_MIGRATION)));
+        list.push(Migration::new(FIRST_MIGRATION));
         assert_eq!(list, List::from(vec![FIRST_MIGRATION]));
 
-        list.push(Migration::new(&PathBuf::from(SECOND_MIGRATION)));
+        list.push(Migration::new(SECOND_MIGRATION));
         assert_eq!(list, List::from(vec![FIRST_MIGRATION, SECOND_MIGRATION]))
     }
 
@@ -200,14 +181,8 @@ mod tests {
     fn contains_migration() {
         let list = List::from(vec![FIRST_MIGRATION]);
 
-        assert_eq!(
-            list.contains(&Migration::new(&PathBuf::from(FIRST_MIGRATION))),
-            true
-        );
-        assert_eq!(
-            list.contains(&Migration::new(&PathBuf::from(SECOND_MIGRATION))),
-            false
-        );
+        assert_eq!(list.contains(&Migration::new(FIRST_MIGRATION)), true);
+        assert_eq!(list.contains(&Migration::new(SECOND_MIGRATION)), false);
     }
 
     #[test]
@@ -216,14 +191,6 @@ mod tests {
 
         assert_eq!(list.contains_name(FIRST_MIGRATION), true);
         assert_eq!(list.contains_name(SECOND_MIGRATION), false);
-    }
-
-    #[test]
-    fn maybe_next_migration_name() {
-        let list = List::from(vec![FIRST_MIGRATION]);
-
-        assert_eq!(list.maybe_missed(FIRST_MIGRATION), None);
-        assert_eq!(list.maybe_missed(SECOND_MIGRATION), Some(SECOND_MIGRATION));
     }
 
     #[test]

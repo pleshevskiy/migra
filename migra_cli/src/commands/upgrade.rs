@@ -12,9 +12,9 @@ pub(crate) fn upgrade_pending_migrations(
 
     client.create_migrations_table()?;
 
-    let applied_migration_names =
-        client.get_extended_applied_migrations(&config.migration_dir_path())?;
-    let all_migrations = migra::fs::get_all_migrations(&config.migration_dir_path())?;
+    let migrations_dir_path = config.migration_dir_path();
+    let applied_migration_names = client.get_applied_migrations()?;
+    let all_migrations = migra::fs::get_all_migrations(&migrations_dir_path)?;
 
     let pending_migrations =
         migra::fs::filter_pending_migrations(&all_migrations, &applied_migration_names);
@@ -44,18 +44,27 @@ pub(crate) fn upgrade_pending_migrations(
             .into()
     };
 
+    let migrations_with_content = migrations
+        .iter()
+        .map(|migration| {
+            let migration_name = migration.name();
+            let migration_file_path = migrations_dir_path.join(migration_name).join("up.sql");
+            std::fs::read_to_string(migration_file_path).map(|content| (migration_name, content))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
     database::maybe_with_transaction(
         opts.transaction_opts.single_transaction,
         &mut client,
         &mut |mut client| {
-            migrations
+            migrations_with_content
                 .iter()
-                .try_for_each(|migration| {
-                    print_migration_info(migration);
+                .try_for_each(|(migration_name, content)| {
+                    println!("upgrade {}...", migration_name);
                     database::maybe_with_transaction(
                         !opts.transaction_opts.single_transaction,
                         &mut client,
-                        &mut |client| client.apply_upgrade_migration(migration),
+                        &mut |client| client.run_upgrade_migration(migration_name, &content),
                     )
                 })
                 .map_err(From::from)
@@ -63,8 +72,4 @@ pub(crate) fn upgrade_pending_migrations(
     )?;
 
     Ok(())
-}
-
-fn print_migration_info(migration: &migra::Migration) {
-    println!("upgrade {}...", migration.name());
 }

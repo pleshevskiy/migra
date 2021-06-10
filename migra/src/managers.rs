@@ -1,6 +1,5 @@
 use crate::errors::{DbKind, Error, MigraResult, StdResult};
-use crate::migration::{self, Migration};
-use std::path::Path;
+use crate::migration;
 
 pub trait BatchExecute {
     fn batch_execute(&mut self, sql: &str) -> StdResult<()>;
@@ -37,26 +36,15 @@ pub trait ManageMigrations: BatchExecute {
 
     fn get_applied_migrations(&mut self) -> MigraResult<migration::List>;
 
-    fn get_extended_applied_migrations(&mut self, prefix: &Path) -> MigraResult<migration::List> {
-        self.get_applied_migrations()
-            .map(|migrations| migrations.extend_with_path_prefix(prefix))
-    }
-
-    fn apply_upgrade_migration(&mut self, migration: &Migration) -> MigraResult<()> {
-        let content = migration.read_upgrade_migration_sql()?;
-
-        self.apply_sql(&content)?;
-        self.insert_migration(migration.name())?;
-
+    fn run_upgrade_migration(&mut self, name: &str, content: &str) -> MigraResult<()> {
+        self.apply_sql(content)?;
+        self.insert_migration(name)?;
         Ok(())
     }
 
-    fn apply_downgrade_migration(&mut self, migration: &Migration) -> MigraResult<()> {
-        let content = migration.read_downgrade_migration_sql()?;
-
-        self.apply_sql(&content)?;
-        self.delete_migration(migration.name())?;
-
+    fn run_downgrade_migration(&mut self, name: &str, content: &str) -> MigraResult<()> {
+        self.apply_sql(content)?;
+        self.delete_migration(name)?;
         Ok(())
     }
 }
