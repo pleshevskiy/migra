@@ -19,7 +19,7 @@ where
 
 pub trait Client: ManageMigrations + ManageTransaction {}
 
-pub type AnyClient = Box<dyn Client>;
+pub type AnyClient = Box<(dyn Client + 'static)>;
 
 #[cfg(feature = "postgres")]
 pub mod postgres;
@@ -36,12 +36,9 @@ pub mod sqlite;
 #[cfg(feature = "sqlite")]
 pub use self::sqlite::Client as SqliteClient;
 
-pub fn with_transaction<TrxFnMut, Res>(
-    client: &mut AnyClient,
-    trx_fn: &mut TrxFnMut,
-) -> MigraResult<Res>
+pub fn run_in_transaction<TrxFnMut>(client: &mut AnyClient, trx_fn: TrxFnMut) -> MigraResult<()>
 where
-    TrxFnMut: FnMut(&mut AnyClient) -> MigraResult<Res>,
+    TrxFnMut: FnOnce(&mut AnyClient) -> MigraResult<()>,
 {
     client
         .begin_transaction()
@@ -50,16 +47,16 @@ where
         .or_else(|err| client.rollback_transaction().and(Err(err)))
 }
 
-pub fn maybe_with_transaction<TrxFnMut, Res>(
-    is_needed: bool,
+pub fn should_run_in_transaction<TrxFnMut>(
     client: &mut AnyClient,
-    trx_fn: &mut TrxFnMut,
-) -> MigraResult<Res>
+    is_needed: bool,
+    trx_fn: TrxFnMut,
+) -> MigraResult<()>
 where
-    TrxFnMut: FnMut(&mut AnyClient) -> MigraResult<Res>,
+    TrxFnMut: FnOnce(&mut AnyClient) -> MigraResult<()>,
 {
     if is_needed {
-        with_transaction(client, trx_fn)
+        run_in_transaction(client, trx_fn)
     } else {
         trx_fn(client)
     }

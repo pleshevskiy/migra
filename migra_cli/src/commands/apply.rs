@@ -1,6 +1,7 @@
 use crate::app::App;
 use crate::database;
 use crate::opts::ApplyCommandOpt;
+use migra::should_run_in_transaction;
 
 pub(crate) fn apply_sql(app: &App, cmd_opts: &ApplyCommandOpt) -> migra::StdResult<()> {
     let config = app.config()?;
@@ -20,17 +21,17 @@ pub(crate) fn apply_sql(app: &App, cmd_opts: &ApplyCommandOpt) -> migra::StdResu
         .map(std::fs::read_to_string)
         .collect::<Result<Vec<_>, _>>()?;
 
-    migra::maybe_with_transaction(
-        cmd_opts.transaction_opts.single_transaction,
+    should_run_in_transaction(
         &mut client,
-        &mut |mut client| {
+        cmd_opts.transaction_opts.single_transaction,
+        |client| {
             file_contents
                 .iter()
                 .try_for_each(|content| {
-                    migra::maybe_with_transaction(
+                    should_run_in_transaction(
+                        client,
                         !cmd_opts.transaction_opts.single_transaction,
-                        &mut client,
-                        &mut |client| client.apply_sql(content),
+                        |client| client.apply_sql(content),
                     )
                 })
                 .map_err(From::from)

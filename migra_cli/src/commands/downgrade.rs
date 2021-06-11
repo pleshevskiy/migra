@@ -1,6 +1,7 @@
 use crate::app::App;
 use crate::database;
 use crate::opts::DowngradeCommandOpt;
+use migra::should_run_in_transaction;
 use std::cmp;
 
 pub(crate) fn rollback_applied_migrations(
@@ -32,19 +33,19 @@ pub(crate) fn rollback_applied_migrations(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    migra::maybe_with_transaction(
-        opts.transaction_opts.single_transaction,
+    should_run_in_transaction(
         &mut client,
-        &mut |mut client| {
+        opts.transaction_opts.single_transaction,
+        |client| {
             migrations_with_content
                 .iter()
                 .try_for_each(|(migration_name, content)| {
                     if all_migrations.contains_name(migration_name) {
                         println!("downgrade {}...", migration_name);
-                        migra::maybe_with_transaction(
+                        should_run_in_transaction(
+                            client,
                             !opts.transaction_opts.single_transaction,
-                            &mut client,
-                            &mut |client| client.run_downgrade_migration(migration_name, &content),
+                            |client| client.run_downgrade_migration(migration_name, &content),
                         )
                     } else {
                         Ok(())
