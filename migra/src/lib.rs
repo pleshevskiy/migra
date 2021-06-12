@@ -70,8 +70,9 @@
 //! | `Sqlite`        | sqlite       |
 //!
 #![deny(missing_debug_implementations)]
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 #![deny(clippy::all, clippy::pedantic)]
+// TODO: add missing errors doc
 #![allow(clippy::missing_errors_doc)]
 
 /// Includes additional client tools and contains predefined
