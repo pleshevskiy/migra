@@ -5,12 +5,16 @@ use crate::migration;
 use postgres::{Client as PostgresClient, NoTls};
 use std::fmt;
 
+/// Predefined `Postgres` client.
+///
+/// **Note:** Requires enabling `postgres` feature.
 pub struct Client {
     conn: PostgresClient,
     migrations_table_name: String,
 }
 
 impl Client {
+    /// Provide access to the original database connection.
     #[must_use]
     pub fn conn(&self) -> &PostgresClient {
         &self.conn

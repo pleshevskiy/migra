@@ -2,12 +2,14 @@ use crate::errors::MigraResult;
 use crate::managers::ManageMigrations;
 use std::iter::FromIterator;
 
+/// A simple wrap over string.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Migration {
     name: String,
 }
 
 impl Migration {
+    /// Creates new migration by name.
     #[must_use]
     pub fn new(name: &str) -> Self {
         Migration {
@@ -15,12 +17,21 @@ impl Migration {
         }
     }
 
+    /// Returns name of migration.
     #[must_use]
     pub fn name(&self) -> &String {
         &self.name
     }
 }
 
+/// Wrap over migration vector. Can be implicitly converted to a vector and has
+/// a few of additional utilities for handling migrations.
+///
+/// Can be presented as a list of all migrations, a list of pending migrations
+/// or a list of applied migrations, depending on the implementation.
+///
+///
+///
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct List {
     inner: Vec<Migration>,
@@ -82,19 +93,38 @@ impl std::ops::Deref for List {
 }
 
 impl List {
+    /// Creates empty migration list.
     #[must_use]
     pub fn new() -> Self {
         List { inner: Vec::new() }
     }
 
+    /// Push migration to list.
     pub fn push(&mut self, migration: Migration) {
         self.inner.push(migration)
     }
 
+    /// Push migration name to list.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # let mut list = List::new();
+    /// list.push_name("name");
+    /// # assert_eq!(list, List::from(vec!["name"]));
+    /// ```
+    ///
+    /// Is identical to the following
+    /// ```rust
+    /// # let mut list = List::new();
+    /// list.push(Migration::new("name"));
+    /// # assert_eq!(list, List::from(vec!["name"]));
+    /// ```
     pub fn push_name(&mut self, name: &str) {
         self.inner.push(Migration::new(name))
     }
 
+    /// Check if list contains specific migration.
     #[must_use]
     pub fn contains(&self, other_migration: &Migration) -> bool {
         self.inner
@@ -102,11 +132,13 @@ impl List {
             .any(|migration| migration == other_migration)
     }
 
+    /// Check if list contains migration with specific name.
     #[must_use]
     pub fn contains_name(&self, name: &str) -> bool {
         self.inner.iter().any(|migration| migration.name() == name)
     }
 
+    /// Exclude specific list from current list.
     #[must_use]
     pub fn exclude(&self, list: &List) -> List {
         self.inner
@@ -115,6 +147,8 @@ impl List {
             .collect()
     }
 
+    /// Runs a upgrade migration with SQL content and adds a new migration to the current list
+    /// If there is no migration migration with specific name in the list.
     pub fn should_run_upgrade_migration(
         &mut self,
         client: &mut dyn ManageMigrations,
@@ -131,6 +165,8 @@ impl List {
         Ok(is_missed)
     }
 
+    /// Runs a downgrade migration with SQL content and removes the last migration from the
+    /// current list if the last item in the list has the specified name.
     pub fn should_run_downgrade_migration(
         &mut self,
         client: &mut dyn ManageMigrations,

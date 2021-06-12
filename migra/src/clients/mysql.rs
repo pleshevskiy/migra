@@ -5,6 +5,9 @@ use crate::migration;
 use mysql::prelude::*;
 use mysql::{Pool, PooledConn};
 
+/// Predefined `MySQL` client.
+///
+/// **Note:** Requires enabling `mysql` feature.
 #[derive(Debug)]
 pub struct Client {
     conn: PooledConn,
@@ -12,6 +15,7 @@ pub struct Client {
 }
 
 impl Client {
+    /// Provide access to the original database connection.
     #[must_use]
     pub fn conn(&self) -> &PooledConn {
         &self.conn

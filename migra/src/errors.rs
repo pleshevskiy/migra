@@ -1,13 +1,22 @@
 use std::fmt;
 use std::io;
 
+/// A helper type for any standard error.
 pub type StdError = Box<dyn std::error::Error + 'static + Sync + Send>;
+
+/// A helper type for any result with standard error.
 pub type StdResult<T> = Result<T, StdError>;
+
+/// A helper type for any result with migra error.
 pub type MigraResult<T> = Result<T, Error>;
 
+/// Migra error
 #[derive(Debug)]
 pub enum Error {
+    /// Represents database errors.
     Db(DbError),
+
+    /// Represents standard input output errors.
     Io(io::Error),
 }
 
@@ -36,24 +45,41 @@ impl From<io::Error> for Error {
 }
 
 impl Error {
+    /// Creates a database error.
     #[must_use]
     pub fn db(origin: StdError, kind: DbKind) -> Self {
         Error::Db(DbError { kind, origin })
     }
 }
 
+/// All kinds of errors with witch this crate works.
 #[derive(Debug)]
 pub enum DbKind {
+    /// Failed to database connection.
     DatabaseConnection,
 
+    /// Failed to open transaction.
     OpenTransaction,
+
+    /// Failed to commit transaction.
     CommitTransaction,
+
+    /// Failed to rollback transaction.
     RollbackTransaction,
 
+    /// Failed to create a migrations table.
     CreateMigrationsTable,
+
+    /// Failed to apply SQL.
     ApplySql,
+
+    /// Failed to insert a migration.
     InsertMigration,
+
+    /// Failed to delete a migration.
     DeleteMigration,
+
+    /// Failed to get applied migrations.
     GetAppliedMigrations,
 }
 
@@ -73,6 +99,7 @@ impl fmt::Display for DbKind {
     }
 }
 
+/// Represents database error.
 #[derive(Debug)]
 pub struct DbError {
     kind: DbKind,
@@ -82,5 +109,19 @@ pub struct DbError {
 impl fmt::Display for DbError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "{} - {}", &self.kind, &self.origin)
+    }
+}
+
+impl DbError {
+    /// Returns database error kind.
+    #[must_use]
+    pub fn kind(&self) -> &DbKind {
+        &self.kind
+    }
+
+    /// Returns origin database error.
+    #[must_use]
+    pub fn origin(&self) -> &StdError {
+        &self.origin
     }
 }

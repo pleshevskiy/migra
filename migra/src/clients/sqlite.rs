@@ -4,6 +4,9 @@ use crate::managers::{BatchExecute, ManageMigrations, ManageTransaction};
 use crate::migration;
 use rusqlite::Connection;
 
+/// Predefined `Sqlite` client.
+///
+/// **Note:** Requires enabling `sqlite` feature.
 #[derive(Debug)]
 pub struct Client {
     conn: Connection,
@@ -11,6 +14,7 @@ pub struct Client {
 }
 
 impl Client {
+    /// Provide access to the original database connection.
     #[must_use]
     pub fn conn(&self) -> &Connection {
         &self.conn

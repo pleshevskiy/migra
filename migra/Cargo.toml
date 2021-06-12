@@ -1,8 +1,15 @@
 [package]
 name = "migra"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Dmitriy Pleshevskiy <dmitriy@ideascup.me>"]
 edition = "2018"
+description = "Migra is a simple library for managing SQL in your application"
+homepage = "https://github.com/pleshevskiy/migra"
+repository = "https://github.com/pleshevskiy/migra"
+license = "MIT OR Apache-2.0"
+keywords = ["migration", "sql", "manager"]
+categories = ["accessibility", "database"]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
