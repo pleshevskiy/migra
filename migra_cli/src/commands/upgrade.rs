@@ -29,7 +29,7 @@ pub(crate) fn upgrade_pending_migrations(
             .clone()
             .into_iter()
             .find(|m| m.name() == &migration_name);
-        if let Some(migration) = target_migration.clone() {
+        if let Some(migration) = target_migration {
             vec![migration].into()
         } else {
             eprintln!(r#"Cannot find migration with "{}" name"#, migration_name);
