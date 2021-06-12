@@ -16,8 +16,7 @@ pub(crate) fn upgrade_pending_migrations(
     let applied_migration_names = client.get_applied_migrations()?;
     let all_migrations = migra::fs::get_all_migrations(&migrations_dir_path)?;
 
-    let pending_migrations =
-        migra::fs::filter_pending_migrations(&all_migrations, &applied_migration_names);
+    let pending_migrations = all_migrations.exclude(&applied_migration_names);
     if pending_migrations.is_empty() {
         println!("Up to date");
         return Ok(());

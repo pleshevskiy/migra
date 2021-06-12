@@ -35,8 +35,7 @@ pub(crate) fn print_migration_lists(app: &App) -> migra::StdResult<()> {
     println!();
 
     let all_migrations = migra::fs::get_all_migrations(&config.migration_dir_path())?;
-    let pending_migrations =
-        migra::fs::filter_pending_migrations(&all_migrations, &applied_migrations);
+    let pending_migrations = all_migrations.exclude(&applied_migrations);
 
     show_pending_migrations(&pending_migrations);
 

@@ -20,7 +20,7 @@ sqlite = ["migra/sqlite"]
 mysql = ["migra/mysql"]
 
 [dependencies]
-migra = { version = "0", path = "../migra" }
+migra = { version = "1", path = "../migra" }
 cfg-if = "1.0"
 structopt = "0.3"
 serde = { version = "1.0", features = ["derive"] }
