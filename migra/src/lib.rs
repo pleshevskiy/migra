@@ -35,7 +35,7 @@
 //! use migra::managers::{ManageTransaction, ManageMigrations};
 //!
 //! fn main() -> migra::Result<()> {
-//!     let mut client = SqliteClient::new("./tasks.db")?;
+//!     let mut client = SqliteClient::new(":memory:")?;
 //!
 //!     client.create_migrations_table()?;
 //!

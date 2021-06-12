@@ -23,8 +23,13 @@ impl Client {
 
 impl OpenDatabaseConnection for Client {
     fn manual(connection_string: &str, migrations_table_name: &str) -> MigraResult<Self> {
-        let conn = Connection::open(connection_string)
-            .map_err(|err| Error::db(err.into(), DbKind::DatabaseConnection))?;
+        let conn = if connection_string == ":memory:" {
+            Connection::open_in_memory()
+        } else {
+            Connection::open(connection_string)
+        }
+        .map_err(|err| Error::db(err.into(), DbKind::DatabaseConnection))?;
+
         Ok(Client {
             conn,
             migrations_table_name: migrations_table_name.to_owned(),
