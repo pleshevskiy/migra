@@ -109,6 +109,7 @@ impl List {
     /// # Example
     ///
     /// ```rust
+    /// # use migra::migration::List;
     /// # let mut list = List::new();
     /// list.push_name("name");
     /// # assert_eq!(list, List::from(vec!["name"]));
@@ -116,6 +117,7 @@ impl List {
     ///
     /// Is identical to the following
     /// ```rust
+    /// # use migra::migration::{List, Migration};
     /// # let mut list = List::new();
     /// list.push(Migration::new("name"));
     /// # assert_eq!(list, List::from(vec!["name"]));

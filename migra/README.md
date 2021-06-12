@@ -32,9 +32,40 @@ authors = ["Me <user@rust-lang.org>"]
 migra = { version = "1.0", features = ["postgres"] }
 ```
 
-### Usage
+## Basic usage
 
-For more information about the crate, please read doc.
+**Note:** This example requires to enable `sqlite` feature.
+
+```rust
+use migra::clients::{OpenDatabaseConnection, SqliteClient};
+use migra::managers::{ManageTransaction, ManageMigrations};
+
+fn main() -> migra::Result<()> {
+    let mut client = SqliteClient::new("./tasks.db")?;
+
+    client.create_migrations_table()?;
+
+    let mut migrations = client.get_applied_migrations()?;
+
+    client
+        .begin_transaction()
+        .and_then(|_| {
+            migrations.should_run_upgrade_migration(
+                &mut client,
+                "20210615_initial_migration",
+                r#"CREATE TABLE IF NOT EXISTS tasks (
+                    title TEXT NOT NULL
+                );"#,
+            )?;
+
+            Ok(())
+        })
+        .and_then(|res| client.commit_transaction().and(Ok(res)))
+        .or_else(|err| client.rollback_transaction().and(Err(err)));
+
+    Ok(())
+}
+```
 
 ### Supported databases
 
