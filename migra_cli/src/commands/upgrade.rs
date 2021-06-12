@@ -2,7 +2,6 @@ use crate::app::App;
 use crate::database;
 use crate::opts::UpgradeCommandOpt;
 use migra::migration;
-use migra::should_run_in_transaction;
 
 pub(crate) fn upgrade_pending_migrations(
     app: &App,
@@ -54,7 +53,7 @@ pub(crate) fn upgrade_pending_migrations(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    should_run_in_transaction(
+    database::should_run_in_transaction(
         &mut client,
         opts.transaction_opts.single_transaction,
         |client| {
@@ -62,7 +61,7 @@ pub(crate) fn upgrade_pending_migrations(
                 .iter()
                 .try_for_each(|(migration_name, content)| {
                     println!("upgrade {}...", migration_name);
-                    should_run_in_transaction(
+                    database::should_run_in_transaction(
                         client,
                         !opts.transaction_opts.single_transaction,
                         |client| client.run_upgrade_migration(migration_name, &content),
