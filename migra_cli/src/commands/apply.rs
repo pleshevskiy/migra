@@ -1,16 +1,10 @@
 use crate::app::App;
-use crate::database::prelude::*;
-use crate::database::transaction::maybe_with_transaction;
-use crate::database::{DatabaseConnectionManager, MigrationManager};
+use crate::database;
 use crate::opts::ApplyCommandOpt;
-use crate::StdResult;
 
-pub(crate) fn apply_sql(app: &App, cmd_opts: ApplyCommandOpt) -> StdResult<()> {
+pub(crate) fn apply_sql(app: &App, cmd_opts: &ApplyCommandOpt) -> migra::StdResult<()> {
     let config = app.config()?;
-    let mut connection_manager = DatabaseConnectionManager::connect(&config.database)?;
-    let conn = connection_manager.connection();
-
-    let migration_manager = MigrationManager::from(&config);
+    let mut client = database::create_client_from_config(&config)?;
 
     let file_contents = cmd_opts
         .file_paths
@@ -26,17 +20,17 @@ pub(crate) fn apply_sql(app: &App, cmd_opts: ApplyCommandOpt) -> StdResult<()> {
         .map(std::fs::read_to_string)
         .collect::<Result<Vec<_>, _>>()?;
 
-    maybe_with_transaction(
+    database::should_run_in_transaction(
+        &mut client,
         cmd_opts.transaction_opts.single_transaction,
-        conn,
-        &mut |conn| {
+        |client| {
             file_contents
                 .iter()
                 .try_for_each(|content| {
-                    maybe_with_transaction(
+                    database::should_run_in_transaction(
+                        client,
                         !cmd_opts.transaction_opts.single_transaction,
-                        conn,
-                        &mut |conn| migration_manager.apply_sql(conn, content),
+                        |client| client.apply_sql(content),
                     )
                 })
                 .map_err(From::from)

@@ -1,5 +1,5 @@
 use crate::commands;
-use crate::error::*;
+use crate::error::MigraResult;
 use crate::opts::Command;
 use crate::AppOpt;
 use crate::Config;
@@ -24,24 +24,24 @@ impl App {
         Config::read(self.config_path())
     }
 
-    pub fn run_command(&self) -> StdResult<()> {
-        match dbg!(self.app_opt.command.clone()) {
+    pub fn run_command(&self) -> migra::StdResult<()> {
+        match self.app_opt.command.clone() {
             Command::Init => {
                 commands::initialize_migra_manifest(self)?;
             }
-            Command::Apply(cmd_opts) => {
+            Command::Apply(ref cmd_opts) => {
                 commands::apply_sql(self, cmd_opts)?;
             }
-            Command::Make(cmd_opts) => {
+            Command::Make(ref cmd_opts) => {
                 commands::make_migration(self, cmd_opts)?;
             }
             Command::List => {
                 commands::print_migration_lists(self)?;
             }
-            Command::Upgrade(cmd_opts) => {
+            Command::Upgrade(ref cmd_opts) => {
                 commands::upgrade_pending_migrations(self, cmd_opts)?;
             }
-            Command::Downgrade(cmd_opts) => {
+            Command::Downgrade(ref cmd_opts) => {
                 commands::rollback_applied_migrations(self, cmd_opts)?;
             }
             Command::Completions(cmd_opts) => {

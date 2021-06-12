@@ -1,8 +1,7 @@
-use crate::database::migration::Migration;
 use crate::error::{Error, MigraResult};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use std::{env, fs, io};
+use std::{env, fs};
 
 //===========================================================================//
 // Internal Config Utils / Macros                                            //
@@ -46,13 +45,21 @@ cargo install migra-cli --features ${database_name}"#,
 // Database config                                                           //
 //===========================================================================//
 
+fn is_sqlite_database_file(filename: &str) -> bool {
+    filename
+        .rsplit('.')
+        .next()
+        .map(|ext| ext.eq_ignore_ascii_case("db"))
+        == Some(true)
+}
+
 fn default_database_connection_env() -> String {
     String::from("$DATABASE_URL")
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub(crate) enum SupportedDatabaseClient {
+pub enum SupportedDatabaseClient {
     #[cfg(feature = "postgres")]
     Postgres,
     #[cfg(feature = "mysql")]
@@ -114,7 +121,7 @@ impl DatabaseConfig {
                                 please_install_with!(feature "mysql")
                             }
                         }
-                    } else if connection_string.ends_with(".db") {
+                    } else if is_sqlite_database_file(&connection_string) {
                         cfg_if! {
                             if #[cfg(feature = "sqlite")] {
                                 Some(SupportedDatabaseClient::Sqlite)
@@ -131,11 +138,13 @@ impl DatabaseConfig {
     }
 
     pub fn connection_string(&self) -> MigraResult<String> {
-        if let Some(connection_env) = self.connection.strip_prefix("$") {
-            env::var(connection_env).map_err(|_| Error::MissedEnvVar(connection_env.to_string()))
-        } else {
-            Ok(self.connection.clone())
-        }
+        self.connection.strip_prefix("$").map_or_else(
+            || Ok(self.connection.clone()),
+            |connection_env| {
+                env::var(connection_env)
+                    .map_err(|_| Error::MissedEnvVar(connection_env.to_string()))
+            },
+        )
     }
 }
 
@@ -174,33 +183,35 @@ impl Default for MigrationsConfig {
 
 impl MigrationsConfig {
     pub fn directory(&self) -> String {
-        if let Some(directory_env) = self.directory.strip_prefix("$") {
-            env::var(directory_env).unwrap_or_else(|_| {
-                println!(
-                    "WARN: Cannot read {} variable and use {} directory by default",
-                    directory_env,
+        self.directory.strip_prefix("$").map_or_else(
+            || self.directory.clone(),
+            |directory_env| {
+                env::var(directory_env).unwrap_or_else(|_| {
+                    println!(
+                        "WARN: Cannot read {} variable and use {} directory by default",
+                        directory_env,
+                        default_migrations_directory()
+                    );
                     default_migrations_directory()
-                );
-                default_migrations_directory()
-            })
-        } else {
-            self.directory.clone()
-        }
+                })
+            },
+        )
     }
 
     pub fn table_name(&self) -> String {
-        if let Some(table_name_env) = self.table_name.strip_prefix("$") {
-            env::var(table_name_env).unwrap_or_else(|_| {
-                println!(
-                    "WARN: Cannot read {} variable and use {} table_name by default",
-                    table_name_env,
+        self.table_name.strip_prefix("$").map_or_else(
+            || self.table_name.clone(),
+            |table_name_env| {
+                env::var(table_name_env).unwrap_or_else(|_| {
+                    println!(
+                        "WARN: Cannot read {} variable and use {} table_name by default",
+                        table_name_env,
+                        default_migrations_table_name()
+                    );
                     default_migrations_table_name()
-                );
-                default_migrations_table_name()
-            })
-        } else {
-            self.table_name.clone()
-        }
+                })
+            },
+        )
     }
 
     pub fn date_format(&self) -> String {
@@ -217,7 +228,7 @@ impl MigrationsConfig {
 pub(crate) const MIGRA_TOML_FILENAME: &str = "Migra.toml";
 
 #[derive(Debug, Serialize, Deserialize)]
-pub(crate) struct Config {
+pub struct Config {
     #[serde(skip)]
     manifest_root: PathBuf,
 
@@ -275,27 +286,5 @@ impl Config {
 
     pub fn migration_dir_path(&self) -> PathBuf {
         self.directory_path().join(self.migrations.directory())
-    }
-
-    pub fn migrations(&self) -> MigraResult<Vec<Migration>> {
-        let mut entries = match self.migration_dir_path().read_dir() {
-            Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
-            entries => entries?
-                .map(|res| res.map(|e| e.path()))
-                .collect::<Result<Vec<_>, _>>()?,
-        };
-
-        if entries.is_empty() {
-            return Ok(vec![]);
-        }
-
-        entries.sort();
-
-        let migrations = entries
-            .iter()
-            .filter_map(|path| Migration::new(&path))
-            .collect::<Vec<_>>();
-
-        Ok(migrations)
     }
 }
