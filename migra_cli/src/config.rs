@@ -50,7 +50,7 @@ fn is_sqlite_database_file(filename: &str) -> bool {
         .rsplit('.')
         .next()
         .map(|ext| ext.eq_ignore_ascii_case("db"))
-        == Some(true)
+        .unwrap_or_default()
 }
 
 fn default_database_connection_env() -> String {

@@ -486,62 +486,6 @@ mod upgrade {
     }
 
     #[test]
-    fn partial_applied_invalid_migrations() -> TestResult {
-        fn inner<ValidateFn>(database_name: &'static str, validate: ValidateFn) -> TestResult
-        where
-            ValidateFn: Fn() -> TestResult,
-        {
-            let manifest_path = database_manifest_path(database_name);
-
-            Command::cargo_bin("migra")?
-                .arg("-c")
-                .arg(&manifest_path)
-                .arg("up")
-                .assert()
-                .failure();
-
-            validate()?;
-
-            Command::cargo_bin("migra")?
-                .arg("-c")
-                .arg(&manifest_path)
-                .arg("down")
-                .assert()
-                .success();
-
-            Ok(())
-        }
-
-        #[cfg(feature = "postgres")]
-        inner("postgres_invalid", || {
-            let mut conn = client_postgres::Client::connect(POSTGRES_URL, client_postgres::NoTls)?;
-            let articles_res = conn.query("SELECT a.id FROM articles AS a", &[]);
-            let persons_res = conn.query("SELECT p.id FROM persons AS p", &[]);
-
-            assert!(articles_res.is_ok());
-            assert!(persons_res.is_err());
-
-            Ok(())
-        })?;
-
-        #[cfg(feature = "sqlite")]
-        remove_sqlite_db().and_then(|_| {
-            inner("sqlite_invalid", || {
-                let conn = client_rusqlite::Connection::open(SQLITE_URL)?;
-                let articles_res = conn.execute_batch("SELECT a.id FROM articles AS a");
-                let persons_res = conn.execute_batch("SELECT p.id FROM persons AS p");
-
-                assert!(articles_res.is_ok());
-                assert!(persons_res.is_err());
-
-                Ok(())
-            })
-        })?;
-
-        Ok(())
-    }
-
-    #[test]
     fn cannot_applied_invalid_migrations_in_single_transaction() -> TestResult {
         fn inner<ValidateFn>(database_name: &'static str, validate: ValidateFn) -> TestResult
         where
@@ -587,6 +531,8 @@ mod upgrade {
                 Ok(())
             })
         })?;
+
+        // mysql doesn't support DDL in transaction 🤷
 
         Ok(())
     }

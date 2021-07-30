@@ -32,27 +32,19 @@ pub(crate) fn rollback_applied_migrations(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    database::should_run_in_transaction(
-        &mut client,
-        opts.transaction_opts.single_transaction,
-        |client| {
-            migrations_with_content
-                .iter()
-                .try_for_each(|(migration_name, content)| {
-                    if all_migrations.contains_name(migration_name) {
-                        println!("downgrade {}...", migration_name);
-                        database::should_run_in_transaction(
-                            client,
-                            !opts.transaction_opts.single_transaction,
-                            |client| client.run_downgrade_migration(migration_name, &content),
-                        )
-                    } else {
-                        Ok(())
-                    }
-                })
-                .map_err(From::from)
-        },
-    )?;
+    database::run_in_transaction(&mut client, |client| {
+        migrations_with_content
+            .iter()
+            .try_for_each(|(migration_name, content)| {
+                if all_migrations.contains_name(migration_name) {
+                    println!("downgrade {}...", migration_name);
+                    client.run_downgrade_migration(migration_name, &content)
+                } else {
+                    Ok(())
+                }
+            })
+            .map_err(From::from)
+    })?;
 
     Ok(())
 }

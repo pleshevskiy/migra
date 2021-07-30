@@ -29,9 +29,6 @@ impl Migration {
 ///
 /// Can be presented as a list of all migrations, a list of pending migrations
 /// or a list of applied migrations, depending on the implementation.
-///
-///
-///
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct List {
     inner: Vec<Migration>,
@@ -219,16 +216,16 @@ mod tests {
     fn contains_migration() {
         let list = List::from(vec![FIRST_MIGRATION]);
 
-        assert_eq!(list.contains(&Migration::new(FIRST_MIGRATION)), true);
-        assert_eq!(list.contains(&Migration::new(SECOND_MIGRATION)), false);
+        assert!(list.contains(&Migration::new(FIRST_MIGRATION)));
+        assert!(!list.contains(&Migration::new(SECOND_MIGRATION)));
     }
 
     #[test]
     fn contains_migration_name() {
         let list = List::from(vec![FIRST_MIGRATION]);
 
-        assert_eq!(list.contains_name(FIRST_MIGRATION), true);
-        assert_eq!(list.contains_name(SECOND_MIGRATION), false);
+        assert!(list.contains_name(FIRST_MIGRATION));
+        assert!(!list.contains_name(SECOND_MIGRATION));
     }
 
     #[test]

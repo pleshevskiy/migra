@@ -53,18 +53,3 @@ where
         .and_then(|res| client.commit_transaction().and(Ok(res)))
         .or_else(|err| client.rollback_transaction().and(Err(err)))
 }
-
-pub fn should_run_in_transaction<TrxFnMut>(
-    client: &mut AnyClient,
-    is_needed: bool,
-    trx_fn: TrxFnMut,
-) -> migra::Result<()>
-where
-    TrxFnMut: FnOnce(&mut AnyClient) -> migra::Result<()>,
-{
-    if is_needed {
-        run_in_transaction(client, trx_fn)
-    } else {
-        trx_fn(client)
-    }
-}
