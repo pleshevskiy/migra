@@ -12,6 +12,7 @@ pub type MigraResult<T> = Result<T, Error>;
 
 /// Migra error
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Represents database errors.
     Db(DbError),
@@ -54,6 +55,7 @@ impl Error {
 
 /// All kinds of errors with witch this crate works.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum DbKind {
     /// Failed to database connection.
     DatabaseConnection,
