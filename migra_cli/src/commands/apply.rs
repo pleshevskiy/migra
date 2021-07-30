@@ -20,22 +20,12 @@ pub(crate) fn apply_sql(app: &App, cmd_opts: &ApplyCommandOpt) -> migra::StdResu
         .map(std::fs::read_to_string)
         .collect::<Result<Vec<_>, _>>()?;
 
-    database::should_run_in_transaction(
-        &mut client,
-        cmd_opts.transaction_opts.single_transaction,
-        |client| {
-            file_contents
-                .iter()
-                .try_for_each(|content| {
-                    database::should_run_in_transaction(
-                        client,
-                        !cmd_opts.transaction_opts.single_transaction,
-                        |client| client.apply_sql(content),
-                    )
-                })
-                .map_err(From::from)
-        },
-    )?;
+    database::run_in_transaction(&mut client, |client| {
+        file_contents
+            .iter()
+            .try_for_each(|content| client.apply_sql(content))
+            .map_err(From::from)
+    })?;
 
     Ok(())
 }
