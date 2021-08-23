@@ -21,7 +21,7 @@ pub fn get_all_migrations(dir_path: &Path) -> MigraResult<migration::List> {
         Err(e) if e.kind() == io::ErrorKind::NotFound => vec![],
         entries => entries?
             .filter_map(|res| res.ok().map(|e| e.path()))
-            .filter(|path| is_migration_dir(&path))
+            .filter(|path| is_migration_dir(path))
             .collect::<Vec<_>>(),
     };
 

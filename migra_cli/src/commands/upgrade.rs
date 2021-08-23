@@ -57,7 +57,7 @@ pub(crate) fn upgrade_pending_migrations(
             .iter()
             .try_for_each(|(migration_name, content)| {
                 println!("upgrade {}...", migration_name);
-                client.run_upgrade_migration(migration_name, &content)
+                client.run_upgrade_migration(migration_name, content)
             })
             .map_err(From::from)
     })?;

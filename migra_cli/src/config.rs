@@ -138,7 +138,7 @@ impl DatabaseConfig {
     }
 
     pub fn connection_string(&self) -> MigraResult<String> {
-        self.connection.strip_prefix("$").map_or_else(
+        self.connection.strip_prefix('$').map_or_else(
             || Ok(self.connection.clone()),
             |connection_env| {
                 env::var(connection_env)
@@ -183,7 +183,7 @@ impl Default for MigrationsConfig {
 
 impl MigrationsConfig {
     pub fn directory(&self) -> String {
-        self.directory.strip_prefix("$").map_or_else(
+        self.directory.strip_prefix('$').map_or_else(
             || self.directory.clone(),
             |directory_env| {
                 env::var(directory_env).unwrap_or_else(|_| {
@@ -199,7 +199,7 @@ impl MigrationsConfig {
     }
 
     pub fn table_name(&self) -> String {
-        self.table_name.strip_prefix("$").map_or_else(
+        self.table_name.strip_prefix('$').map_or_else(
             || self.table_name.clone(),
             |table_name_env| {
                 env::var(table_name_env).unwrap_or_else(|_| {

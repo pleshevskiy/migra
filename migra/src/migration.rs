@@ -98,7 +98,7 @@ impl List {
 
     /// Push migration to list.
     pub fn push(&mut self, migration: Migration) {
-        self.inner.push(migration)
+        self.inner.push(migration);
     }
 
     /// Push migration name to list.
@@ -120,7 +120,7 @@ impl List {
     /// # assert_eq!(list, List::from(vec!["name"]));
     /// ```
     pub fn push_name(&mut self, name: &str) {
-        self.inner.push(Migration::new(name))
+        self.inner.push(Migration::new(name));
     }
 
     /// Check if list contains specific migration.

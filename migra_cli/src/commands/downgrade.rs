@@ -38,7 +38,7 @@ pub(crate) fn rollback_applied_migrations(
             .try_for_each(|(migration_name, content)| {
                 if all_migrations.contains_name(migration_name) {
                     println!("downgrade {}...", migration_name);
-                    client.run_downgrade_migration(migration_name, &content)
+                    client.run_downgrade_migration(migration_name, content)
                 } else {
                     Ok(())
                 }
