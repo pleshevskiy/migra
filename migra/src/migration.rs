@@ -198,7 +198,7 @@ mod tests {
         assert_eq!(list, List::from(vec![FIRST_MIGRATION]));
 
         list.push(Migration::new(SECOND_MIGRATION));
-        assert_eq!(list, List::from(vec![FIRST_MIGRATION, SECOND_MIGRATION]))
+        assert_eq!(list, List::from(vec![FIRST_MIGRATION, SECOND_MIGRATION]));
     }
 
     #[test]
@@ -209,7 +209,7 @@ mod tests {
         assert_eq!(list, List::from(vec![FIRST_MIGRATION]));
 
         list.push_name(&String::from(SECOND_MIGRATION));
-        assert_eq!(list, List::from(vec![FIRST_MIGRATION, SECOND_MIGRATION]))
+        assert_eq!(list, List::from(vec![FIRST_MIGRATION, SECOND_MIGRATION]));
     }
 
     #[test]
@@ -234,6 +234,6 @@ mod tests {
         let applied_migrations = List::from(vec![FIRST_MIGRATION]);
         let excluded = all_migrations.exclude(&applied_migrations);
 
-        assert_eq!(excluded, List::from(vec![SECOND_MIGRATION]))
+        assert_eq!(excluded, List::from(vec![SECOND_MIGRATION]));
     }
 }
